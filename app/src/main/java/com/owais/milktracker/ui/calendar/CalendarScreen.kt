@@ -10,9 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.owais.milktracker.viewmodel.MilkViewModel
+import com.owais.milktracker.viewmodel.MilkViewModelFactory
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -21,6 +25,8 @@ import java.util.*
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarScreen() {
+    val context = LocalContext.current
+    val viewModel: MilkViewModel = viewModel(factory = MilkViewModelFactory(context))
     val today = LocalDate.now()
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
 
@@ -66,13 +72,14 @@ fun CalendarScreen() {
                 items(days.size) { index ->
                     val day = days[index]
                     if (day != null) {
-                        CalendarDay(day)
+                        CalendarDay(day, viewModel)
                     } else {
                         Box(modifier = Modifier
                             .aspectRatio(1f)
                             .padding(4.dp))
                     }
                 }
+
             }
         )
     }
@@ -80,10 +87,11 @@ fun CalendarScreen() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CalendarDay(date: LocalDate) {
+fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
+    val entry = viewModel.getEntry(date)
     val bgColor = when {
-        date.dayOfMonth % 5 == 0 -> Color.Red.copy(alpha = 0.3f) // Mock borrowed
-        date.dayOfMonth % 2 == 0 -> Color.Blue.copy(alpha = 0.3f) // Mock sold
+        entry?.isBorrowed == true -> Color.Red.copy(alpha = 0.3f)
+        entry?.isBorrowed == false -> Color.Blue.copy(alpha = 0.3f)
         else -> Color.Transparent
     }
 
@@ -92,12 +100,13 @@ fun CalendarDay(date: LocalDate) {
             .aspectRatio(1f)
             .padding(4.dp)
             .background(bgColor, shape = MaterialTheme.shapes.medium)
-            .clickable { /* TODO: Open entry dialog */ },
+            .clickable { /* Show entry dialog (next) */ },
         contentAlignment = Alignment.Center
     ) {
         Text(text = "${date.dayOfMonth}", fontSize = 14.sp)
     }
 }
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun generateMonthDates(yearMonth: YearMonth): List<LocalDate?> {
