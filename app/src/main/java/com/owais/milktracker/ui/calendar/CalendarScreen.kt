@@ -89,9 +89,9 @@ fun CalendarScreen() {
 @Composable
 fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
     val entry = viewModel.getEntry(date)
-    val bgColor = when {
-        entry?.isBorrowed == true -> Color.Red.copy(alpha = 0.3f)
-        entry?.isBorrowed == false -> Color.Blue.copy(alpha = 0.3f)
+    val bgColor = when (entry?.isBorrowed) {
+        true -> Color.Red.copy(alpha = 0.3f)
+        false -> Color.Blue.copy(alpha = 0.3f)
         else -> Color.Transparent
     }
 
