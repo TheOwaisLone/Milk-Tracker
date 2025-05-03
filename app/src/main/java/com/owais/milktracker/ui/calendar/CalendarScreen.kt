@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.owais.milktracker.ui.components.EntryDialog
 import com.owais.milktracker.viewmodel.MilkViewModel
 import com.owais.milktracker.viewmodel.MilkViewModelFactory
 import java.time.LocalDate
@@ -88,10 +89,12 @@ fun CalendarScreen() {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
+    var showDialog by remember { mutableStateOf(false) }
+
     val entry = viewModel.getEntry(date)
-    val bgColor = when (entry?.isBorrowed) {
-        true -> Color.Red.copy(alpha = 0.3f)
-        false -> Color.Blue.copy(alpha = 0.3f)
+    val bgColor = when {
+        entry?.isBorrowed == true -> Color.Red.copy(alpha = 0.3f)
+        entry?.isBorrowed == false -> Color.Blue.copy(alpha = 0.3f)
         else -> Color.Transparent
     }
 
@@ -100,12 +103,24 @@ fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
             .aspectRatio(1f)
             .padding(4.dp)
             .background(bgColor, shape = MaterialTheme.shapes.medium)
-            .clickable { /* Show entry dialog (next) */ },
+            .clickable { showDialog = true },
         contentAlignment = Alignment.Center
     ) {
         Text(text = "${date.dayOfMonth}", fontSize = 14.sp)
     }
+
+    if (showDialog) {
+        EntryDialog(
+            date = date,
+            initialEntry = entry,
+            onDismiss = { showDialog = false },
+            onSave = {
+                viewModel.upsertEntry(it)
+            }
+        )
+    }
 }
+
 
 
 @RequiresApi(Build.VERSION_CODES.O)
