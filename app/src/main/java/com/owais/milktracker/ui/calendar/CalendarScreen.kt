@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.owais.milktracker.ui.components.EntryDialog
 import com.owais.milktracker.viewmodel.MilkViewModel
 import com.owais.milktracker.viewmodel.MilkViewModelFactory
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -91,7 +92,9 @@ fun CalendarScreen() {
 fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
     var showDialog by remember { mutableStateOf(false) }
 
-    val entry = viewModel.getEntry(date)
+    val entry by viewModel.entries
+        .map { it[date] }
+        .collectAsState(initial = null)
     val bgColor = when {
         entry?.isBorrowed == true -> Color.Red.copy(alpha = 0.3f)
         entry?.isBorrowed == false -> Color.Blue.copy(alpha = 0.3f)
@@ -116,7 +119,11 @@ fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
             onDismiss = { showDialog = false },
             onSave = {
                 viewModel.upsertEntry(it)
+            },
+            onDelete = {
+                entry?.let { viewModel.deleteEntry(it) }
             }
+
         )
     }
 }

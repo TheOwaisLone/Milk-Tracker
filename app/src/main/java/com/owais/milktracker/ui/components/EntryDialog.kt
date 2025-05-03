@@ -1,5 +1,7 @@
 package com.owais.milktracker.ui.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -10,12 +12,14 @@ import androidx.compose.ui.unit.dp
 import com.owais.milktracker.data.model.MilkEntry
 import java.time.LocalDate
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EntryDialog(
     date: LocalDate,
     initialEntry: MilkEntry?,
     onDismiss: () -> Unit,
-    onSave: (MilkEntry) -> Unit
+    onSave: (MilkEntry) -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
     var quantity by remember { mutableStateOf(initialEntry?.quantity?.toString() ?: "") }
     var isBorrowed by remember { mutableStateOf(initialEntry?.isBorrowed ?: false) }
@@ -41,8 +45,25 @@ fun EntryDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            Row {
+                if (initialEntry != null) {
+                    TextButton(
+                        onClick = {
+                            onSave(
+                                initialEntry.copy(quantity = 0.0)
+                            ) // Optional: Treat delete differently if needed
+                            onDelete?.invoke()
+                            onDismiss()
+                        }
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
         },
+
         title = { Text("Milk Entry for ${date.dayOfMonth}/${date.monthValue}") },
         text = {
             Column {
