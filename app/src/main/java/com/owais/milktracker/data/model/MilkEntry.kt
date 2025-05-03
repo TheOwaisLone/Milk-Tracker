@@ -6,7 +6,8 @@ import java.time.LocalDate
 
 @Entity(tableName = "milk_entries")
 data class MilkEntry(
-    @PrimaryKey val date: LocalDate,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val date: LocalDate,
     val quantity: Double,
     val isBorrowed: Boolean
 )
