@@ -8,19 +8,16 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import java.time.ZoneId
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
-import androidx.work.*
 import com.owais.milktracker.alarm.MilkReminderReceiver
 import com.owais.milktracker.ui.calendar.CalendarScreen
 import com.owais.milktracker.utils.NotificationUtils
-import com.owais.milktracker.worker.MilkReminderWorker
 import java.time.LocalDateTime
-import java.util.concurrent.TimeUnit
+import java.time.ZoneId
 
 class MainActivity : ComponentActivity() {
 
@@ -28,24 +25,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Check if the app was opened from a notification (deep-linking to entry)
         val openEntry = intent?.getBooleanExtra("open_entry_for_today", false) ?: false
 
-
+        // Set up notification channel and permissions
         NotificationUtils.createNotificationChannel(this)
         requestNotificationPermission()
 
-        // 🔔 Add this line
-        scheduleExactAlarm() // Schedule 8 PM daily notification
-
-        // Optional: remove WorkManager unless you want a backup reminder
-        // scheduleDailyReminder()
+        // Schedule daily reminder at 8 PM
+        scheduleExactAlarm()
 
         setContent {
             CalendarScreen(openEntryForToday = openEntry)
         }
     }
-
-
 
     @SuppressLint("ScheduleExactAlarm")
     @RequiresApi(Build.VERSION_CODES.O)
@@ -57,9 +50,10 @@ class MainActivity : ComponentActivity() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        // Get the next 8:00 PM time in milliseconds
         val triggerTime = getNext8PMTimeInMillis()
 
-        // Schedule exact alarm
+        // Set exact alarm to trigger once a day at 8 PM
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerTime,
@@ -70,44 +64,16 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun getNext8PMTimeInMillis(): Long {
         val now = LocalDateTime.now()
+
+        // Calculate next 8:00 PM (20:00) based on the current time
         val next8PM = if (now.hour < 20) {
-            now.withHour(13).withMinute(54).withSecond(0).withNano(0)
+            now.withHour(20).withMinute(0).withSecond(0).withNano(0)
         } else {
-            now.plusDays(1).withHour(13).withMinute(54).withSecond(0).withNano(0)
+            now.plusDays(1).withHour(20).withMinute(0).withSecond(0).withNano(0)
         }
+
+        // Return the time in milliseconds
         return next8PM.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    }
-
-
-
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun scheduleDailyReminder() {
-        val workManager = WorkManager.getInstance(applicationContext)
-
-        val workRequest = PeriodicWorkRequestBuilder<MilkReminderWorker>(
-            1, TimeUnit.DAYS
-        )
-            .setInitialDelay(calculateInitialDelay(), TimeUnit.MILLISECONDS)
-            .build()
-
-        workManager.enqueueUniquePeriodicWork(
-            "MilkReminderWork",
-            ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
-        )
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun calculateInitialDelay(): Long {
-        val now = LocalDateTime.now()
-        val targetTime = now.withHour(13).withMinute(45).withSecond(0).withNano(0)
-        val delayDuration = if (now < targetTime) {
-            java.time.Duration.between(now, targetTime)
-        } else {
-            java.time.Duration.between(now, targetTime.plusDays(1))
-        }
-        return delayDuration.seconds * 1000  // Use seconds * 1000 for milliseconds
     }
 
     private fun requestNotificationPermission() {
