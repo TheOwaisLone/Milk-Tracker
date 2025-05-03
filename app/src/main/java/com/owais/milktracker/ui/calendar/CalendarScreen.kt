@@ -95,6 +95,7 @@ fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
     val entry by viewModel.entries
         .map { it[date] }
         .collectAsState(initial = null)
+
     val bgColor = when {
         entry?.isBorrowed == true -> Color.Red.copy(alpha = 0.3f)
         entry?.isBorrowed == false -> Color.Blue.copy(alpha = 0.3f)
@@ -109,7 +110,19 @@ fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
             .clickable { showDialog = true },
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "${date.dayOfMonth}", fontSize = 14.sp)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "${date.dayOfMonth}",
+                style = MaterialTheme.typography.bodySmall
+            )
+            if (entry != null) {
+                Text(
+                    text = "${entry!!.quantity}L",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Black
+                )
+            }
+        }
     }
 
     if (showDialog) {
@@ -123,12 +136,9 @@ fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
             onDelete = {
                 entry?.let { viewModel.deleteEntry(it) }
             }
-
         )
     }
 }
-
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun generateMonthDates(yearMonth: YearMonth): List<LocalDate?> {

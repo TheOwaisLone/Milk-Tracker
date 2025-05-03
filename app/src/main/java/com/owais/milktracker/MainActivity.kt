@@ -1,14 +1,21 @@
 package com.owais.milktracker
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import java.time.ZoneId
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.work.*
+import com.owais.milktracker.alarm.MilkReminderReceiver
 import com.owais.milktracker.ui.calendar.CalendarScreen
 import com.owais.milktracker.utils.NotificationUtils
 import com.owais.milktracker.worker.MilkReminderWorker
@@ -23,12 +30,53 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         NotificationUtils.createNotificationChannel(this)
         requestNotificationPermission()
-        scheduleDailyReminder()
+
+        // 🔔 Add this line
+        scheduleExactAlarm() // Schedule 8 PM daily notification
+
+        // Optional: remove WorkManager unless you want a backup reminder
+        // scheduleDailyReminder()
 
         setContent {
             CalendarScreen()
         }
     }
+
+
+
+    @SuppressLint("ScheduleExactAlarm")
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun scheduleExactAlarm() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, MilkReminderReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            this, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val triggerTime = getNext8PMTimeInMillis()
+
+        // Schedule exact alarm
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerTime,
+            pendingIntent
+        )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getNext8PMTimeInMillis(): Long {
+        val now = LocalDateTime.now()
+        val next8PM = if (now.hour < 20) {
+            now.withHour(13).withMinute(54).withSecond(0).withNano(0)
+        } else {
+            now.plusDays(1).withHour(13).withMinute(54).withSecond(0).withNano(0)
+        }
+        return next8PM.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    }
+
+
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun scheduleDailyReminder() {
@@ -50,13 +98,13 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun calculateInitialDelay(): Long {
         val now = LocalDateTime.now()
-        val targetTime = now.withHour(20).withMinute(0).withSecond(0) // 8:00 PM
-        val delay = if (now < targetTime) {
-            Duration.between(now, targetTime)
+        val targetTime = now.withHour(13).withMinute(45).withSecond(0).withNano(0)
+        val delayDuration = if (now < targetTime) {
+            java.time.Duration.between(now, targetTime)
         } else {
-            Duration.between(now, targetTime.plusDays(1))
+            java.time.Duration.between(now, targetTime.plusDays(1))
         }
-        return delay.toMillis()
+        return delayDuration.seconds * 1000  // Use seconds * 1000 for milliseconds
     }
 
     private fun requestNotificationPermission() {
