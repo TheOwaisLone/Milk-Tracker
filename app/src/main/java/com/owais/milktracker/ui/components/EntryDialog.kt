@@ -32,12 +32,12 @@ fun EntryDialog(
                 if (qty != null) {
                     onSave(
                         MilkEntry(
-                            id = initialEntry?.id ?: 0,
                             date = date,
                             quantity = qty,
                             isBorrowed = isBorrowed
                         )
                     )
+
                 }
                 onDismiss()
             }) {
@@ -50,11 +50,16 @@ fun EntryDialog(
                     TextButton(
                         onClick = {
                             onSave(
-                                initialEntry.copy(quantity = 0.0)
-                            ) // Optional: Treat delete differently if needed
+                                MilkEntry(
+                                    date = date,
+                                    quantity = 0.0,
+                                    isBorrowed = isBorrowed // or default to false
+                                )
+                            )
                             onDelete?.invoke()
                             onDismiss()
                         }
+
                     ) {
                         Text("Delete", color = MaterialTheme.colorScheme.error)
                     }

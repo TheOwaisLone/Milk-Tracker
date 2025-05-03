@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.room.*
 import com.owais.milktracker.data.model.MilkEntry
 
-@Database(entities = [MilkEntry::class], version = 1, exportSchema = false)
+@Database(entities = [MilkEntry::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class MilkDatabase : RoomDatabase() {
     abstract fun milkEntryDao(): MilkEntryDao
@@ -14,11 +14,9 @@ abstract class MilkDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): MilkDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    MilkDatabase::class.java,
-                    "milk_db"
-                ).build()
+                val instance = Room.databaseBuilder(context, MilkDatabase::class.java, "milk_db")
+                    .fallbackToDestructiveMigration() // WARNING: This deletes all data!
+                    .build()
                 INSTANCE = instance
                 instance
             }

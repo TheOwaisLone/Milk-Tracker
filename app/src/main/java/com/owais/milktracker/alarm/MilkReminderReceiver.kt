@@ -9,7 +9,5 @@ import com.owais.milktracker.utils.NotificationUtils
 class MilkReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         NotificationUtils.showReminderNotification(context)
-        Log.d("MilkReminderReceiver", "Alarm received, showing notification")
-
     }
 }
