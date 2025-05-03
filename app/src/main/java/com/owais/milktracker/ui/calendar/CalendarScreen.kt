@@ -26,11 +26,26 @@ import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CalendarScreen() {
+fun CalendarScreen(openEntryForToday: Boolean = false) {
     val context = LocalContext.current
     val viewModel: MilkViewModel = viewModel(factory = MilkViewModelFactory(context))
     val today = LocalDate.now()
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedDate by remember { mutableStateOf(today) }
+
+    // Show dialog automatically for today
+    LaunchedEffect(openEntryForToday) {
+        if (openEntryForToday) {
+            selectedDate = today
+            showDialog = true
+        }
+    }
+
+    val entry by viewModel.entries
+        .map { it[selectedDate] }
+        .collectAsState(initial = null)
 
     val days = remember(currentMonth) {
         generateMonthDates(currentMonth)
@@ -67,21 +82,40 @@ fun CalendarScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Calendar grid
+        // Calendar Grid
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
             content = {
                 items(days.size) { index ->
                     val day = days[index]
                     if (day != null) {
-                        CalendarDay(day, viewModel)
+                        CalendarDay(day, viewModel) { clickedDate ->
+                            selectedDate = clickedDate
+                            showDialog = true
+                        }
                     } else {
                         Box(modifier = Modifier
                             .aspectRatio(1f)
                             .padding(4.dp))
                     }
                 }
+            }
+        )
+    }
 
+    // EntryDialog (single instance reused)
+    if (showDialog) {
+        EntryDialog(
+            date = selectedDate,
+            initialEntry = entry,
+            onDismiss = { showDialog = false },
+            onSave = {
+                viewModel.upsertEntry(it)
+                showDialog = false
+            },
+            onDelete = {
+                entry?.let { viewModel.deleteEntry(it) }
+                showDialog = false
             }
         )
     }
@@ -89,9 +123,11 @@ fun CalendarScreen() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
-    var showDialog by remember { mutableStateOf(false) }
-
+fun CalendarDay(
+    date: LocalDate,
+    viewModel: MilkViewModel,
+    onClick: (LocalDate) -> Unit
+) {
     val entry by viewModel.entries
         .map { it[date] }
         .collectAsState(initial = null)
@@ -107,7 +143,7 @@ fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
             .aspectRatio(1f)
             .padding(4.dp)
             .background(bgColor, shape = MaterialTheme.shapes.medium)
-            .clickable { showDialog = true },
+            .clickable { onClick(date) },
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -124,27 +160,13 @@ fun CalendarDay(date: LocalDate, viewModel: MilkViewModel) {
             }
         }
     }
-
-    if (showDialog) {
-        EntryDialog(
-            date = date,
-            initialEntry = entry,
-            onDismiss = { showDialog = false },
-            onSave = {
-                viewModel.upsertEntry(it)
-            },
-            onDelete = {
-                entry?.let { viewModel.deleteEntry(it) }
-            }
-        )
-    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun generateMonthDates(yearMonth: YearMonth): List<LocalDate?> {
     val firstDay = yearMonth.atDay(1)
     val lastDay = yearMonth.atEndOfMonth()
-    val firstWeekday = firstDay.dayOfWeek.value % 7 // Make Sunday = 0
+    val firstWeekday = firstDay.dayOfWeek.value % 7 // Sunday = 0
 
     val totalDays = lastDay.dayOfMonth
     val calendar = mutableListOf<LocalDate?>()

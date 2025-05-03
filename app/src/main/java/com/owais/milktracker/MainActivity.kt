@@ -19,7 +19,6 @@ import com.owais.milktracker.alarm.MilkReminderReceiver
 import com.owais.milktracker.ui.calendar.CalendarScreen
 import com.owais.milktracker.utils.NotificationUtils
 import com.owais.milktracker.worker.MilkReminderWorker
-import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -28,6 +27,10 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val openEntry = intent?.getBooleanExtra("open_entry_for_today", false) ?: false
+
+
         NotificationUtils.createNotificationChannel(this)
         requestNotificationPermission()
 
@@ -38,7 +41,7 @@ class MainActivity : ComponentActivity() {
         // scheduleDailyReminder()
 
         setContent {
-            CalendarScreen()
+            CalendarScreen(openEntryForToday = openEntry)
         }
     }
 
