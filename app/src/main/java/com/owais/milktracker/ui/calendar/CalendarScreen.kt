@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -62,56 +64,80 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
     Column(modifier = Modifier.padding(16.dp)) {
 
-        // Header with Month Navigation
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+        // 🔷 Calendar Header: month/year and navigation buttons
+        Surface(
+            tonalElevation = 5.dp,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            TextButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
-                Text("< Previous")
-            }
-            Text(
-                text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            TextButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
-                Text("Next >")
-            }
-        }
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 12.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Previous month button
+                IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous Month")
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                // Display current month and year
+                Text(
+                    text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
-        // Weekday Labels
-        val weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            weekdays.forEach {
-                Text(text = it, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Calendar Grid Layout
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(7),
-            content = {
-                items(days.size) { index ->
-                    val day = days[index]
-                    if (day != null) {
-                        CalendarDay(day, viewModel) { clickedDate ->
-                            selectedDate = clickedDate
-                            showDialog = true
-                        }
-                    } else {
-                        // Empty cell (padding at start of month)
-                        Box(modifier = Modifier
-                            .aspectRatio(1f)
-                            .padding(4.dp))
-                    }
+                // Next month button
+                IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next Month")
                 }
             }
-        )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 🔷 Weekday labels (Mon–Sun)
+        val weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        Row(modifier = Modifier.fillMaxWidth()) {
+            weekdays.forEach {
+                Text(
+                    text = it,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // 🔷 Calendar Grid: shows all days of the month
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(7),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxHeight()
+        ) {
+            items(days.size) { index ->
+                val day = days[index]
+                if (day != null) {
+                    // If valid day, show calendar cell
+                    CalendarDay(day, viewModel) {
+                        selectedDate = it
+                        showDialog = true
+                    }
+                } else {
+                    // Placeholder cell for alignment
+                    Box(
+                        modifier = Modifier
+                            .aspectRatio(1f)
+                            .padding(4.dp)
+                    )
+                }
+            }
+        }
     }
 
     // Entry Dialog for adding/updating entries
@@ -145,16 +171,16 @@ fun CalendarDay(
         .collectAsState(initial = null)
 
     // Background color for each day box
-    val bgColor = when {
-        entry?.isBorrowed == true -> Color.Red.copy(alpha = 0.1f)
-        entry?.isBorrowed == false -> Color.Blue.copy(alpha = 0.1f)
+    val bgColor = when (entry?.isBorrowed) {
+        true -> Color.Red.copy(alpha = 0.1f)
+        false -> Color.Blue.copy(alpha = 0.1f)
         else -> Color.Transparent
     }
 
     Box(
         modifier = Modifier
             .aspectRatio(1f)
-            .padding(4.dp)
+            .padding(0.dp)
             .background(bgColor, shape = MaterialTheme.shapes.medium)
             .clickable { onClick(date) },
         contentAlignment = Alignment.Center
@@ -167,30 +193,32 @@ fun CalendarDay(
             )
 
             if (entry != null) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(1.dp))
 
                 // Milk Quantity (e.g., 1.5L)
                 Text(
                     text = "${entry!!.quantity}L",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Black
+                    color = Color.Black,
+                    fontWeight = FontWeight.SemiBold
+
                 )
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(1.dp))
 
                 // Status Icon: Borrowed or Sold
                 Icon(
-                    imageVector = if (entry!!.isBorrowed) Icons.Filled.TrendingDown else Icons.Filled.ShoppingCart,
+                    imageVector = if (entry!!.isBorrowed) Icons.AutoMirrored.Filled.TrendingDown else Icons.Filled.ShoppingCart,
                     contentDescription = if (entry!!.isBorrowed) "Borrowed" else "Sold",
                     tint = if (entry!!.isBorrowed) Color.Red else Color.Blue,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(10.dp)
                 )
 
                 // Small colored dot for status (optional aesthetic)
                 Box(
                     modifier = Modifier
-                        .padding(top = 2.dp)
-                        .size(6.dp)
+                        .padding(top = 0.dp)
+                        .size(25.dp)
                         .background(
                             color = if (entry!!.isBorrowed) Color.Red else Color.Blue,
                             shape = CircleShape
