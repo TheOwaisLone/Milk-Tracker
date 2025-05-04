@@ -42,7 +42,7 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(today) }
 
-    // Automatically show entry dialog for today's date (used when coming from a FAB, etc.)
+    // Automatically open dialog if triggered externally (e.g., via FAB)
     LaunchedEffect(openEntryForToday) {
         if (openEntryForToday) {
             selectedDate = today
@@ -50,21 +50,45 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
         }
     }
 
-    // Observe entry for the selected date
+    // Collect all entries
+    val allEntries by viewModel.entries.collectAsState(initial = emptyMap())
+
+    // Extract only entries for current visible month
+    val currentMonthEntries = remember(currentMonth, allEntries) {
+        allEntries.filterKeys {
+            it.month == currentMonth.month && it.year == currentMonth.year
+        }.values
+    }
+
+    // Calculate totals
+    val totalBorrowed = currentMonthEntries
+        .filter { it.isBorrowed }
+        .sumOf { it.quantity }
+
+    val totalSold = currentMonthEntries
+        .filter { !it.isBorrowed }
+        .sumOf { it.quantity }
+
+    val ratePerLitre = 35
+    val amountToPay = (totalBorrowed * ratePerLitre).toInt()
+    val amountToReceive = (totalSold * ratePerLitre).toInt()
+
+    val netBalance = amountToReceive - amountToPay
+
+
     val entry by viewModel.entries
         .map { it[selectedDate] }
         .collectAsState(initial = null)
 
-    // Generate all dates (including padding nulls) for the grid
+    // Generate calendar grid dates
     val days = remember(currentMonth) {
         generateMonthDates(currentMonth)
     }
 
     // ---------- UI Layout ----------
-
     Column(modifier = Modifier.padding(16.dp)) {
 
-        // 🔷 Calendar Header: month/year and navigation buttons
+        // Header: month name and navigation
         Surface(
             tonalElevation = 5.dp,
             shape = MaterialTheme.shapes.medium,
@@ -76,19 +100,16 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Previous month button
                 IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous Month")
                 }
 
-                // Display current month and year
                 Text(
                     text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
 
-                // Next month button
                 IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next Month")
                 }
@@ -97,7 +118,7 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 🔷 Weekday labels (Mon–Sun)
+        // Weekday headers (Mon to Sun)
         val weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
         Row(modifier = Modifier.fillMaxWidth()) {
             weekdays.forEach {
@@ -113,23 +134,23 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // 🔷 Calendar Grid: shows all days of the month
+        // Calendar grid
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.fillMaxHeight()
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(1f)
         ) {
             items(days.size) { index ->
                 val day = days[index]
                 if (day != null) {
-                    // If valid day, show calendar cell
                     CalendarDay(day, viewModel) {
                         selectedDate = it
                         showDialog = true
                     }
                 } else {
-                    // Placeholder cell for alignment
                     Box(
                         modifier = Modifier
                             .aspectRatio(1f)
@@ -138,9 +159,79 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+// 🔷 Net Balance
+        val netBalance = amountToReceive - amountToPay
+        Text(
+            text = when {
+                netBalance > 0 -> "Net Balance: ₹$netBalance to Receive"
+                netBalance < 0 -> "Net Balance: ₹${-netBalance} to Pay"
+                else -> "Net Balance: ₹0 (Settled)"
+            },
+            color = when {
+                netBalance > 0 -> Color.Blue
+                netBalance < 0 -> Color.Red
+                else -> Color.Gray
+            },
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 🔷 Summary Section: Total Milk & Amounts
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+        ) {
+            Text(
+                text = "Monthly Summary",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                // Borrowed summary
+                Column(horizontalAlignment = Alignment.Start) {
+                    Text(
+                        text = "Borrowed: $totalBorrowed L",
+                        color = Color.Red,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "To Pay: ₹$amountToPay",
+                        color = Color.Red,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+
+                // Sold summary
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Sold: $totalSold L",
+                        color = Color.Blue,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "To Receive: ₹$amountToReceive",
+                        color = Color.Blue,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            }
+        }
     }
 
-    // Entry Dialog for adding/updating entries
+
+
+    // Dialog for creating/updating entry
     if (showDialog) {
         EntryDialog(
             date = selectedDate,
@@ -157,6 +248,7 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
         )
     }
 }
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable

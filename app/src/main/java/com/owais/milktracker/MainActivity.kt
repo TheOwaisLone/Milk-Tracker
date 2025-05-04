@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,6 +19,7 @@ import com.owais.milktracker.ui.calendar.CalendarScreen
 import com.owais.milktracker.utils.NotificationUtils
 import java.time.LocalDateTime
 import java.time.ZoneId
+import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
 
@@ -32,8 +34,8 @@ class MainActivity : ComponentActivity() {
         NotificationUtils.createNotificationChannel(this)
         requestNotificationPermission()
 
-        // Schedule daily reminder at 8 PM
-        scheduleExactAlarm()
+        // Check and request exact alarm permission (Android 12+)
+        checkAndRequestExactAlarmPermission()
 
         setContent {
             CalendarScreen(openEntryForToday = openEntry)
@@ -50,10 +52,8 @@ class MainActivity : ComponentActivity() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // Get the next 8:00 PM time in milliseconds
         val triggerTime = getNext8PMTimeInMillis()
 
-        // Set exact alarm to trigger once a day at 8 PM
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerTime,
@@ -64,15 +64,11 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun getNext8PMTimeInMillis(): Long {
         val now = LocalDateTime.now()
-
-        // Calculate next 8:00 PM (20:00) based on the current time
         val next8PM = if (now.hour < 20) {
             now.withHour(20).withMinute(0).withSecond(0).withNano(0)
         } else {
             now.plusDays(1).withHour(20).withMinute(0).withSecond(0).withNano(0)
         }
-
-        // Return the time in milliseconds
         return next8PM.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
 
@@ -86,6 +82,25 @@ class MainActivity : ComponentActivity() {
                 val requestPermissionLauncher =
                     registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
                 requestPermissionLauncher.launch(permission)
+            }
+        }
+    }
+
+    private fun checkAndRequestExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(AlarmManager::class.java)
+            if (alarmManager.canScheduleExactAlarms()) {
+                scheduleExactAlarm()
+            } else {
+                // Request permission via system settings
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                intent.data = "package:$packageName".toUri()
+                startActivity(intent)
+            }
+        } else {
+            // For Android < 12, no special permission needed
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                scheduleExactAlarm()
             }
         }
     }
