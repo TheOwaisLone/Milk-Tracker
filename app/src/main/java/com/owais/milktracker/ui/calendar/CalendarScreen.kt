@@ -10,7 +10,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,6 +32,7 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarScreen(openEntryForToday: Boolean = false) {
@@ -53,185 +56,195 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
     // Collect all entries
     val allEntries by viewModel.entries.collectAsState(initial = emptyMap())
 
-    // Extract only entries for current visible month
+    // Filter for current month entries
     val currentMonthEntries = remember(currentMonth, allEntries) {
         allEntries.filterKeys {
             it.month == currentMonth.month && it.year == currentMonth.year
         }.values
     }
 
-    // Calculate totals
-    val totalBorrowed = currentMonthEntries
-        .filter { it.isBorrowed }
-        .sumOf { it.quantity }
-
-    val totalSold = currentMonthEntries
-        .filter { !it.isBorrowed }
-        .sumOf { it.quantity }
+    val totalBorrowed = currentMonthEntries.filter { it.isBorrowed }.sumOf { it.quantity }
+    val totalSold = currentMonthEntries.filter { !it.isBorrowed }.sumOf { it.quantity }
 
     val ratePerLitre = 35
     val amountToPay = (totalBorrowed * ratePerLitre).toInt()
     val amountToReceive = (totalSold * ratePerLitre).toInt()
-
     val netBalance = amountToReceive - amountToPay
 
+    val entry by viewModel.entries.map { it[selectedDate] }.collectAsState(initial = null)
 
-    val entry by viewModel.entries
-        .map { it[selectedDate] }
-        .collectAsState(initial = null)
+    // Generate calendar days
+    val days = remember(currentMonth) { generateMonthDates(currentMonth) }
 
-    // Generate calendar grid dates
-    val days = remember(currentMonth) {
-        generateMonthDates(currentMonth)
-    }
-
-    // ---------- UI Layout ----------
-    Column(modifier = Modifier.padding(16.dp)) {
-
-        // Header: month name and navigation
-        Surface(
-            tonalElevation = 5.dp,
-            shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous Month")
-                }
-
-                Text(
-                    text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
-                IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next Month")
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Weekday headers (Mon to Sun)
-        val weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-        Row(modifier = Modifier.fillMaxWidth()) {
-            weekdays.forEach {
-                Text(
-                    text = it,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelMedium,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // Calendar grid
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(7),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(1f)
-        ) {
-            items(days.size) { index ->
-                val day = days[index]
-                if (day != null) {
-                    CalendarDay(day, viewModel) {
-                        selectedDate = it
-                        showDialog = true
+    // ----------  Scaffold with TopAppBar ----------
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Milk Tracker",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                },
+                actions = {
+                    // Settings icon
+                    IconButton(onClick = { /* TODO: Open Settings screen */ }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .aspectRatio(1f)
-                            .padding(4.dp)
-                    )
-                }
-            }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-// 🔷 Net Balance
-        val netBalance = amountToReceive - amountToPay
-        Text(
-            text = when {
-                netBalance > 0 -> "Net Balance: ₹$netBalance to Receive"
-                netBalance < 0 -> "Net Balance: ₹${-netBalance} to Pay"
-                else -> "Net Balance: ₹0 (Settled)"
-            },
-            color = when {
-                netBalance > 0 -> Color.Blue
-                netBalance < 0 -> Color.Red
-                else -> Color.Gray
-            },
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 🔷 Summary Section: Total Milk & Amounts
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
-        ) {
-            Text(
-                text = "Monthly Summary",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                    // Exit icon
+                    IconButton(onClick = {
+                        // Optional: Confirm exit
+                        // Example: (context as? Activity)?.finish()
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Exit App",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
-            Spacer(modifier = Modifier.height(6.dp))
+        },
+        content = { innerPadding ->
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                // Borrowed summary
-                Column(horizontalAlignment = Alignment.Start) {
-                    Text(
-                        text = "Borrowed: $totalBorrowed L",
-                        color = Color.Red,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "To Pay: ₹$amountToPay",
-                        color = Color.Red,
-                        fontWeight = FontWeight.Normal
-                    )
+            Column(modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp)) {
+
+                // Month Header with navigation
+                Surface(
+                    tonalElevation = 5.dp,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous Month")
+                        }
+
+                        Text(
+                            text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next Month")
+                        }
+                    }
                 }
 
-                // Sold summary
-                Column(horizontalAlignment = Alignment.End) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Weekday Headers
+                val weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    weekdays.forEach {
+                        Text(
+                            text = it,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelMedium,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Calendar Grid
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(7),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                ) {
+                    items(days.size) { index ->
+                        val day = days[index]
+                        if (day != null) {
+                            CalendarDay(day, viewModel) {
+                                selectedDate = it
+                                showDialog = true
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .padding(4.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Net Balance
+                Text(
+                    text = when {
+                        netBalance > 0 -> "Net Balance: ₹$netBalance to Receive"
+                        netBalance < 0 -> "Net Balance: ₹${-netBalance} to Pay"
+                        else -> "Net Balance: ₹0 (Settled)"
+                    },
+                    color = when {
+                        netBalance > 0 -> Color.Blue
+                        netBalance < 0 -> Color.Red
+                        else -> Color.Gray
+                    },
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Monthly Summary
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
                     Text(
-                        text = "Sold: $totalSold L",
-                        color = Color.Blue,
-                        fontWeight = FontWeight.SemiBold
+                        text = "Monthly Summary",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "To Receive: ₹$amountToReceive",
-                        color = Color.Blue,
-                        fontWeight = FontWeight.Normal
-                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text("Borrowed: $totalBorrowed L", color = Color.Red, fontWeight = FontWeight.SemiBold)
+                            Text("To Pay: ₹$amountToPay", color = Color.Red)
+                        }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Sold: $totalSold L", color = Color.Blue, fontWeight = FontWeight.SemiBold)
+                            Text("To Receive: ₹$amountToReceive", color = Color.Blue)
+                        }
+                    }
                 }
             }
         }
-    }
+    )
 
-
-
-    // Dialog for creating/updating entry
+    // Dialog for entry
     if (showDialog) {
         EntryDialog(
             date = selectedDate,
@@ -248,6 +261,7 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
         )
     }
 }
+
 
 
 @RequiresApi(Build.VERSION_CODES.O)
