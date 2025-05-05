@@ -2,6 +2,7 @@ package com.owais.milktracker.ui.calendar
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -86,13 +88,12 @@ fun CalendarScreen(
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = "MilkTracker Logo",
-                        tint = MaterialTheme.colorScheme.primary,
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "Milk Tracker Logo",
                         modifier = Modifier
-                            .padding(start = 12.dp)
-                            .size(34.dp)
+                            .size(40.dp), // You can reduce this if needed
+                        contentScale = ContentScale.Fit
                     )
                 },
                 title = {

@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permission = Manifest.permission.POST_NOTIFICATIONS
             val isGranted = ContextCompat.checkSelfPermission(this, permission) ==
-                android.content.pm.PackageManager.PERMISSION_GRANTED
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
 
             if (!isGranted) {
                 val requestPermissionLauncher =
