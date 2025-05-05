@@ -38,8 +38,4 @@ class MilkViewModel(private val repository: MilkRepository) : ViewModel() {
         }
     }
 
-    // Function to get the entry for a specific date
-    fun getEntry(date: LocalDate): MilkEntry? {
-        return _entries.value[date]  // Retrieve the entry from _entries map
-    }
 }

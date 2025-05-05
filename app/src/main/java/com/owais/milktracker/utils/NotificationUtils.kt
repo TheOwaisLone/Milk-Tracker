@@ -13,7 +13,7 @@ import com.owais.milktracker.MainActivity
 import com.owais.milktracker.R
 
 object NotificationUtils {
-    const val CHANNEL_ID = "milk_reminder_channel"
+    private const val CHANNEL_ID = "milk_reminder_channel"
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -46,9 +46,9 @@ object NotificationUtils {
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Ensure this drawable exists
+            .setSmallIcon(R.drawable.logo) // Ensure this drawable exists
             .setContentTitle("Milk Tracker Reminder")
-            .setContentText("Don't forget to log today’s milk entry.")
+            .setContentText("Click to add today’s milk entry.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent) // 👈 This launches the app
