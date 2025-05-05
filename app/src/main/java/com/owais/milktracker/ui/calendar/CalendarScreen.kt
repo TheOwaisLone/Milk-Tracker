@@ -128,7 +128,7 @@ fun CalendarScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                scrollBehavior = scrollBehavior
+//                scrollBehavior = scrollBehavior
             )
         },
         content = { innerPadding ->

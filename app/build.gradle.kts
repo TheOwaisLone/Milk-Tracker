@@ -75,6 +75,17 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
 
+    // Material 3 (Compose)
+    implementation("androidx.compose.material3:material3:1.2.0")
+
+    // Material Components (XML-based themes)
+    implementation("com.google.android.material:material:1.11.0")
+
+    // Compose runtime and UI
+    implementation("androidx.compose.ui:ui:1.6.0")
+    implementation("androidx.activity:activity-compose:1.8.0")
+
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
