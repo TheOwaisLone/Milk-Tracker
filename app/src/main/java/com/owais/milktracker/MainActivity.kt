@@ -14,12 +14,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import com.owais.milktracker.alarm.MilkReminderReceiver
 import com.owais.milktracker.ui.calendar.CalendarScreen
+import com.owais.milktracker.ui.settings.SettingsScreen
 import com.owais.milktracker.utils.NotificationUtils
 import java.time.LocalDateTime
 import java.time.ZoneId
-import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
 
@@ -27,18 +31,32 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Check if the app was opened from a notification (deep-linking to entry)
         val openEntry = intent?.getBooleanExtra("open_entry_for_today", false) ?: false
 
-        // Set up notification channel and permissions
         NotificationUtils.createNotificationChannel(this)
         requestNotificationPermission()
-
-        // Check and request exact alarm permission (Android 12+)
         checkAndRequestExactAlarmPermission()
 
         setContent {
-            CalendarScreen(openEntryForToday = openEntry)
+            val navController = rememberNavController()
+
+            NavHost(navController = navController, startDestination = "calendar") {
+                composable("calendar") {
+                    CalendarScreen(
+                        openEntryForToday = openEntry,
+                        onSettingsClick = {
+                            navController.navigate("settings")
+                        }
+                    )
+                }
+                composable("settings") {
+                    SettingsScreen(
+                        onBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+            }
         }
     }
 
@@ -76,7 +94,7 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permission = Manifest.permission.POST_NOTIFICATIONS
             val isGranted = ContextCompat.checkSelfPermission(this, permission) ==
-                    android.content.pm.PackageManager.PERMISSION_GRANTED
+                android.content.pm.PackageManager.PERMISSION_GRANTED
 
             if (!isGranted) {
                 val requestPermissionLauncher =
@@ -92,13 +110,11 @@ class MainActivity : ComponentActivity() {
             if (alarmManager.canScheduleExactAlarms()) {
                 scheduleExactAlarm()
             } else {
-                // Request permission via system settings
                 val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                 intent.data = "package:$packageName".toUri()
                 startActivity(intent)
             }
         } else {
-            // For Android < 12, no special permission needed
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 scheduleExactAlarm()
             }

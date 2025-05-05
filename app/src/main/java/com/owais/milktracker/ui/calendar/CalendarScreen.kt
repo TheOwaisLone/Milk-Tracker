@@ -38,7 +38,10 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CalendarScreen(openEntryForToday: Boolean = false) {
+fun CalendarScreen(
+    openEntryForToday: Boolean = false,
+    onSettingsClick: () -> Unit
+) {
     val context = LocalContext.current
     val viewModel: MilkViewModel = viewModel(factory = MilkViewModelFactory(context))
 
@@ -50,7 +53,6 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-
     // Automatically open dialog if triggered externally (e.g., via FAB)
     LaunchedEffect(openEntryForToday) {
         if (openEntryForToday) {
@@ -59,10 +61,8 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
         }
     }
 
-    // Collect all entries
     val allEntries by viewModel.entries.collectAsState(initial = emptyMap())
 
-    // Filter for current month entries
     val currentMonthEntries = remember(currentMonth, allEntries) {
         allEntries.filterKeys {
             it.month == currentMonth.month && it.year == currentMonth.year
@@ -79,17 +79,15 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
     val entry by viewModel.entries.map { it[selectedDate] }.collectAsState(initial = null)
 
-    // Generate calendar days
     val days = remember(currentMonth) { generateMonthDates(currentMonth) }
 
-    // ----------  Scaffold with TopAppBar ----------
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 navigationIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground), // Replace with your actual drawable
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
                         contentDescription = "MilkTracker Logo",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
@@ -97,7 +95,7 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
                             .size(34.dp)
                     )
                 },
-                        title = {
+                title = {
                     Text(
                         text = "Milk Tracker",
                         style = MaterialTheme.typography.titleLarge.copy(
@@ -107,8 +105,7 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
                     )
                 },
                 actions = {
-                    // Settings icon
-                    IconButton(onClick = { /* TODO: Open Settings screen */ }) {
+                    IconButton(onClick = onSettingsClick) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Settings",
@@ -116,10 +113,8 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
                         )
                     }
 
-                    // Exit icon
                     IconButton(onClick = {
-                        // Optional: Confirm exit
-                        // Example: (context as? Activity)?.finish()
+                        // Optional: Exit logic
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
@@ -141,7 +136,7 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
                 .padding(innerPadding)
                 .padding(16.dp)) {
 
-                // Month Header with navigation
+                // Header with Month & Navigation
                 Surface(
                     tonalElevation = 5.dp,
                     shape = MaterialTheme.shapes.medium,
@@ -170,7 +165,7 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Weekday Headers
+                // Weekday headers
                 val weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
                 Row(modifier = Modifier.fillMaxWidth()) {
                     weekdays.forEach {
@@ -203,18 +198,15 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
                                 showDialog = true
                             }
                         } else {
-                            Box(
-                                modifier = Modifier
-                                    .aspectRatio(1f)
-                                    .padding(4.dp)
-                            )
+                            Box(modifier = Modifier
+                                .aspectRatio(1f)
+                                .padding(4.dp))
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Net Balance
                 Text(
                     text = when {
                         netBalance > 0 -> "Net Balance: ₹$netBalance to Receive"
@@ -234,7 +226,6 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Monthly Summary
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
                     Text(
                         text = "Monthly Summary",
@@ -262,7 +253,6 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
         }
     )
 
-    // Dialog for entry
     if (showDialog) {
         EntryDialog(
             date = selectedDate,
@@ -280,8 +270,6 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
     }
 }
 
-
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarDay(
@@ -289,12 +277,10 @@ fun CalendarDay(
     viewModel: MilkViewModel,
     onClick: (LocalDate) -> Unit
 ) {
-    // Observe this day's entry
     val entry by viewModel.entries
         .map { it[date] }
         .collectAsState(initial = null)
 
-    // Background color for each day box
     val bgColor = when (entry?.isBorrowed) {
         true -> Color.Red.copy(alpha = 0.1f)
         false -> Color.Blue.copy(alpha = 0.1f)
@@ -310,7 +296,6 @@ fun CalendarDay(
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Date Number (e.g., 1, 2, 3...)
             Text(
                 text = "${date.dayOfMonth}",
                 style = MaterialTheme.typography.bodySmall
@@ -318,27 +303,19 @@ fun CalendarDay(
 
             if (entry != null) {
                 Spacer(modifier = Modifier.height(1.dp))
-
-                // Milk Quantity (e.g., 1.5L)
                 Text(
                     text = "${entry!!.quantity}L",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Black,
                     fontWeight = FontWeight.SemiBold
-
                 )
-
                 Spacer(modifier = Modifier.height(1.dp))
-
-                // Status Icon: Borrowed or Sold
                 Icon(
                     imageVector = if (entry!!.isBorrowed) Icons.AutoMirrored.Filled.TrendingDown else Icons.Filled.ShoppingCart,
                     contentDescription = if (entry!!.isBorrowed) "Borrowed" else "Sold",
                     tint = if (entry!!.isBorrowed) Color.Red else Color.Blue,
                     modifier = Modifier.size(10.dp)
                 )
-
-                // Small colored dot for status (optional aesthetic)
                 Box(
                     modifier = Modifier
                         .padding(top = 0.dp)
@@ -357,19 +334,9 @@ fun CalendarDay(
 fun generateMonthDates(yearMonth: YearMonth): List<LocalDate?> {
     val firstDay = yearMonth.atDay(1)
     val lastDay = yearMonth.atEndOfMonth()
-
-    val firstWeekday = firstDay.dayOfWeek.value % 7 // Sunday = 0
-
-    val totalDays = lastDay.dayOfMonth
+    val firstWeekday = firstDay.dayOfWeek.value % 7
     val calendar = mutableListOf<LocalDate?>()
-
-    // Padding before 1st of the month
     for (i in 1..firstWeekday) calendar.add(null)
-
-    // Add all valid dates
-    for (day in 1..totalDays) {
-        calendar.add(yearMonth.atDay(day))
-    }
-
+    for (day in 1..lastDay.dayOfMonth) calendar.add(yearMonth.atDay(day))
     return calendar
 }
