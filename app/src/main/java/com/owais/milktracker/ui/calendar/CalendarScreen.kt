@@ -18,11 +18,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.owais.milktracker.R
 import com.owais.milktracker.ui.components.EntryDialog
 import com.owais.milktracker.viewmodel.MilkViewModel
 import com.owais.milktracker.viewmodel.MilkViewModelFactory
@@ -44,6 +47,9 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(today) }
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
 
     // Automatically open dialog if triggered externally (e.g., via FAB)
     LaunchedEffect(openEntryForToday) {
@@ -78,9 +84,20 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
 
     // ----------  Scaffold with TopAppBar ----------
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = {
+                navigationIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground), // Replace with your actual drawable
+                        contentDescription = "MilkTracker Logo",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .size(34.dp)
+                    )
+                },
+                        title = {
                     Text(
                         text = "Milk Tracker",
                         style = MaterialTheme.typography.titleLarge.copy(
@@ -114,7 +131,8 @@ fun CalendarScreen(openEntryForToday: Boolean = false) {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                ),
+                scrollBehavior = scrollBehavior
             )
         },
         content = { innerPadding ->
