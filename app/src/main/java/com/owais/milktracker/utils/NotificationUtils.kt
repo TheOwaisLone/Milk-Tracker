@@ -18,7 +18,7 @@ object NotificationUtils {
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = "Milk Reminder Notifications"
-            val descriptionText = "Reminds you to log daily milk entries at 8:00 PM"
+            val descriptionText = "Reminds you to log daily milk entries"
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText

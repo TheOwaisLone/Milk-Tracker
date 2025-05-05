@@ -13,15 +13,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.owais.milktracker.data.SettingsDataStore
+import kotlinx.coroutines.launch
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    var isReminderOn by remember { mutableStateOf(true) }
-    var reminderTime by remember { mutableStateOf("08:00 PM") }
-    var milkPrice by remember { mutableStateOf("0.0") }
+    val scope = rememberCoroutineScope()
+
+    // Load stored values
+    val reminderEnabledFlow = SettingsDataStore.getReminderEnabled(context).collectAsState(initial = true)
+    val reminderTimeFlow = SettingsDataStore.getReminderTime(context).collectAsState(initial = "08:00 PM")
+    val milkPriceFlow = SettingsDataStore.getMilkPrice(context).collectAsState(initial = "0.0")
+
+    var isReminderOn by remember { mutableStateOf(reminderEnabledFlow.value) }
+    var reminderTime by remember { mutableStateOf(reminderTimeFlow.value) }
+    var milkPrice by remember { mutableStateOf(milkPriceFlow.value) }
+
+    // Update states when flows change
+    LaunchedEffect(reminderEnabledFlow.value, reminderTimeFlow.value, milkPriceFlow.value) {
+        isReminderOn = reminderEnabledFlow.value
+        reminderTime = reminderTimeFlow.value
+        milkPrice = milkPriceFlow.value
+    }
 
     Scaffold(
         topBar = {
@@ -36,10 +52,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -65,7 +78,15 @@ fun SettingsScreen(onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Daily Reminder", modifier = Modifier.weight(1f))
-                Switch(checked = isReminderOn, onCheckedChange = { isReminderOn = it })
+                Switch(
+                    checked = isReminderOn,
+                    onCheckedChange = {
+                        isReminderOn = it
+                        scope.launch {
+                            SettingsDataStore.setReminderEnabled(context, it)
+                        }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -78,7 +99,11 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Text("Reminder Time: $reminderTime", modifier = Modifier.weight(1f))
                 Button(onClick = {
                     showTimePickerDialog(context) { hour, minute ->
-                        reminderTime = formatTime(hour, minute)
+                        val formatted = formatTime(hour, minute)
+                        reminderTime = formatted
+                        scope.launch {
+                            SettingsDataStore.setReminderTime(context, formatted)
+                        }
                     }
                 }) {
                     Text("Change")
@@ -90,7 +115,12 @@ fun SettingsScreen(onBack: () -> Unit) {
             // Milk Price Input
             OutlinedTextField(
                 value = milkPrice,
-                onValueChange = { milkPrice = it },
+                onValueChange = {
+                    milkPrice = it
+                    scope.launch {
+                        SettingsDataStore.setMilkPrice(context, it)
+                    }
+                },
                 label = { Text("Milk Price (per litre)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
@@ -98,7 +128,6 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
     }
 }
-
 
 fun showTimePickerDialog(context: Context, onTimeSelected: (Int, Int) -> Unit) {
     val calendar = Calendar.getInstance()
@@ -123,5 +152,3 @@ fun formatTime(hour: Int, minute: Int): String {
     val amPm = if (isPM) "PM" else "AM"
     return "$formattedHour:$formattedMinute $amPm"
 }
-
-
