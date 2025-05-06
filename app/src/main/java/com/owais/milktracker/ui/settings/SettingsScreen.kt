@@ -15,15 +15,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.owais.milktracker.alarm.ReminderManager
+import com.owais.milktracker.data.SettingsDataStore
+import com.owais.milktracker.utils.SettingsPreferences
 import com.owais.milktracker.viewmodel.SettingsViewModel
 import com.owais.milktracker.viewmodel.SettingsViewModelFactory
+import kotlinx.coroutines.launch
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-//    val scope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModelFactory(context))
 
     val reminderEnabled by viewModel.reminderEnabled.collectAsState(initial = true)
@@ -32,7 +35,11 @@ fun SettingsScreen(onBack: () -> Unit) {
     val milkPrice by viewModel.milkPrice.collectAsState()
 
     var isReminderOn by remember { mutableStateOf(reminderEnabled) }
-    var reminderTime by remember { mutableStateOf(formatTime(hour, minute)) }
+    var reminderTime by remember { mutableStateOf("") }
+
+    LaunchedEffect(hour, minute) {
+        reminderTime = formatTime(hour, minute)
+    }
     var milkPriceInput by remember { mutableStateOf(milkPrice.toString()) }
 
     Scaffold(
@@ -84,50 +91,74 @@ fun SettingsScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Time Picker
+            // Time Picker (Updated to auto-save)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Reminder Time: $reminderTime", modifier = Modifier.weight(1f))
                 Button(onClick = {
-                    showTimePickerDialog(context) { selectedHour, selectedMinute ->
-                        reminderTime = formatTime(selectedHour, selectedMinute)
+                    showTimePickerDialog(context) { hour, minute ->
+                        val formatted = formatTime(hour, minute)
+                        reminderTime = formatted
+
+                        scope.launch {
+                            // Save to SettingsDataStore (UI display purpose)
+                            SettingsDataStore.setReminderTime(context, formatted)
+
+                            // Save to SettingsPreferences (actual alarm scheduling)
+                            SettingsPreferences.saveReminder(context, isReminderOn, hour, minute)
+
+                            if (isReminderOn) {
+                                ReminderManager.scheduleDailyReminder(context, hour, minute)
+                            } else {
+                                ReminderManager.cancelReminder(context)
+                            }
+                        }
                     }
                 }) {
                     Text("Change")
                 }
             }
 
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Milk Price Input
-            OutlinedTextField(
-                value = milkPriceInput,
-                onValueChange = { milkPriceInput = it },
-                label = { Text("Milk Price (per litre)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Milk Price Input
+                OutlinedTextField(
+                    value = milkPriceInput,
+                    onValueChange = { milkPriceInput = it },
+                    label = { Text("Milk Price (per litre)") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
 
-            Button(onClick = {
-                val (h, m) = parseTime(reminderTime)
-                val price = milkPriceInput.toFloatOrNull() ?: 35.0f
+                Button(onClick = {
+                    val (h, m) = parseTime(reminderTime)
+                    val price = milkPriceInput.toFloatOrNull() ?: 35.0f
 
-                viewModel.updateReminder(isReminderOn, h, m)
-                viewModel.updateMilkPrice(price)
+                    viewModel.updateReminder(isReminderOn, h, m)
+                    viewModel.updateMilkPrice(price)
 
-                if (isReminderOn) {
-                    ReminderManager.scheduleDailyReminder(context, h, m)
-                } else {
-                    ReminderManager.cancelReminder(context)
+                    if (isReminderOn) {
+                        ReminderManager.scheduleDailyReminder(context, h, m)
+                    } else {
+                        ReminderManager.cancelReminder(context)
+                    }
+
+                }) {
+                    Text("Save")
                 }
-
-            }) {
-                Text("Save")
             }
+
+
+
         }
     }
 }
