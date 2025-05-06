@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.owais.milktracker.R
 import com.owais.milktracker.ui.components.EntryDialog
+import com.owais.milktracker.utils.SettingsPreferences
 import com.owais.milktracker.viewmodel.MilkViewModel
 import com.owais.milktracker.viewmodel.MilkViewModelFactory
 import kotlinx.coroutines.flow.map
@@ -45,6 +46,12 @@ fun CalendarScreen(
     onSettingsClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val milkPrice by SettingsPreferences.getMilkPrice(context).collectAsState(initial = 35.0f)
+
+
+
+
+
     val viewModel: MilkViewModel = viewModel(factory = MilkViewModelFactory(context))
 
     val today = LocalDate.now()
@@ -74,9 +81,9 @@ fun CalendarScreen(
     val totalBorrowed = currentMonthEntries.filter { it.isBorrowed }.sumOf { it.quantity }
     val totalSold = currentMonthEntries.filter { !it.isBorrowed }.sumOf { it.quantity }
 
-    val ratePerLitre = 35
-    val amountToPay = (totalBorrowed * ratePerLitre).toInt()
-    val amountToReceive = (totalSold * ratePerLitre).toInt()
+    val amountToPay = (totalBorrowed * milkPrice).toInt()
+    val amountToReceive = (totalSold * milkPrice).toInt()
+
     val netBalance = amountToReceive - amountToPay
 
     val entry by viewModel.entries.map { it[selectedDate] }.collectAsState(initial = null)

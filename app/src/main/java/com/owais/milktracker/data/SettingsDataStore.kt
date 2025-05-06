@@ -2,11 +2,11 @@ package com.owais.milktracker.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.*
-import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import com.owais.milktracker.utils.dataStore
 
-private val Context.dataStore by preferencesDataStore(name = "settings")
+
 
 object SettingsDataStore {
     private val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")

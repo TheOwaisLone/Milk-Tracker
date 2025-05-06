@@ -5,6 +5,7 @@ import android.content.Context
 import android.widget.TimePicker
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,31 +13,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.owais.milktracker.data.SettingsDataStore
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.owais.milktracker.alarm.ReminderManager
+import com.owais.milktracker.viewmodel.SettingsViewModel
+import com.owais.milktracker.viewmodel.SettingsViewModelFactory
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+//    val scope = rememberCoroutineScope()
+    val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModelFactory(context))
 
-    // Load stored values
-    val reminderEnabledFlow = SettingsDataStore.getReminderEnabled(context).collectAsState(initial = true)
-    val reminderTimeFlow = SettingsDataStore.getReminderTime(context).collectAsState(initial = "08:00 PM")
-    val milkPriceFlow = SettingsDataStore.getMilkPrice(context).collectAsState(initial = "0.0")
+    val reminderEnabled by viewModel.reminderEnabled.collectAsState(initial = true)
+    val hour by viewModel.reminderHour.collectAsState(initial = 20)
+    val minute by viewModel.reminderMinute.collectAsState(initial = 0)
+    val milkPrice by viewModel.milkPrice.collectAsState()
 
-    var isReminderOn by remember { mutableStateOf(reminderEnabledFlow.value) }
-    var reminderTime by remember { mutableStateOf(reminderTimeFlow.value) }
-    var milkPrice by remember { mutableStateOf(milkPriceFlow.value) }
-
-    // Update states when flows change
-    LaunchedEffect(reminderEnabledFlow.value, reminderTimeFlow.value, milkPriceFlow.value) {
-        isReminderOn = reminderEnabledFlow.value
-        reminderTime = reminderTimeFlow.value
-        milkPrice = milkPriceFlow.value
-    }
+    var isReminderOn by remember { mutableStateOf(reminderEnabled) }
+    var reminderTime by remember { mutableStateOf(formatTime(hour, minute)) }
+    var milkPriceInput by remember { mutableStateOf(milkPrice.toString()) }
 
     Scaffold(
         topBar = {
@@ -81,9 +78,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                     checked = isReminderOn,
                     onCheckedChange = {
                         isReminderOn = it
-                        scope.launch {
-                            SettingsDataStore.setReminderEnabled(context, it)
-                        }
                     }
                 )
             }
@@ -97,12 +91,8 @@ fun SettingsScreen(onBack: () -> Unit) {
             ) {
                 Text("Reminder Time: $reminderTime", modifier = Modifier.weight(1f))
                 Button(onClick = {
-                    showTimePickerDialog(context) { hour, minute ->
-                        val formatted = formatTime(hour, minute)
-                        reminderTime = formatted
-                        scope.launch {
-                            SettingsDataStore.setReminderTime(context, formatted)
-                        }
+                    showTimePickerDialog(context) { selectedHour, selectedMinute ->
+                        reminderTime = formatTime(selectedHour, selectedMinute)
                     }
                 }) {
                     Text("Change")
@@ -113,17 +103,31 @@ fun SettingsScreen(onBack: () -> Unit) {
 
             // Milk Price Input
             OutlinedTextField(
-                value = milkPrice,
-                onValueChange = {
-                    milkPrice = it
-                    scope.launch {
-                        SettingsDataStore.setMilkPrice(context, it)
-                    }
-                },
+                value = milkPriceInput,
+                onValueChange = { milkPriceInput = it },
                 label = { Text("Milk Price (per litre)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(onClick = {
+                val (h, m) = parseTime(reminderTime)
+                val price = milkPriceInput.toFloatOrNull() ?: 35.0f
+
+                viewModel.updateReminder(isReminderOn, h, m)
+                viewModel.updateMilkPrice(price)
+
+                if (isReminderOn) {
+                    ReminderManager.scheduleDailyReminder(context, h, m)
+                } else {
+                    ReminderManager.cancelReminder(context)
+                }
+
+            }) {
+                Text("Save")
+            }
         }
     }
 }
@@ -150,4 +154,15 @@ fun formatTime(hour: Int, minute: Int): String {
     val formattedMinute = minute.toString().padStart(2, '0')
     val amPm = if (isPM) "PM" else "AM"
     return "$formattedHour:$formattedMinute $amPm"
+}
+
+fun parseTime(time: String): Pair<Int, Int> {
+    val parts = time.trim().split(" ", ":")
+    var hour = parts[0].toInt()
+    val minute = parts[1].toInt()
+    val isPM = parts[2] == "PM"
+
+    if (isPM && hour != 12) hour += 12
+    if (!isPM && hour == 12) hour = 0
+    return hour to minute
 }

@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,6 +23,8 @@ import com.owais.milktracker.alarm.MilkReminderReceiver
 import com.owais.milktracker.ui.calendar.CalendarScreen
 import com.owais.milktracker.ui.settings.SettingsScreen
 import com.owais.milktracker.utils.NotificationUtils
+import com.owais.milktracker.utils.SettingsPreferences.cleanCorruptedMilkPrice
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -30,6 +33,11 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Clean corrupted milk price entry before anything else
+        lifecycleScope.launch {
+            cleanCorruptedMilkPrice(this@MainActivity)
+        }
 
         val openEntry = intent?.getBooleanExtra("open_entry_for_today", false) ?: false
 
@@ -122,3 +130,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+
+
