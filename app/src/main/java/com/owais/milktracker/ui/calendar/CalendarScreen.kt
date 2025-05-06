@@ -47,28 +47,12 @@ fun CalendarScreen(
 ) {
     val context = LocalContext.current
     val milkPrice by SettingsPreferences.getMilkPrice(context).collectAsState(initial = 35.0f)
-
-
-
-
-
     val viewModel: MilkViewModel = viewModel(factory = MilkViewModelFactory(context))
 
     val today = LocalDate.now()
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
-
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(today) }
-
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
-    // Automatically open dialog if triggered externally (e.g., via FAB)
-    LaunchedEffect(openEntryForToday) {
-        if (openEntryForToday) {
-            selectedDate = today
-            showDialog = true
-        }
-    }
 
     val allEntries by viewModel.entries.collectAsState(initial = emptyMap())
 
@@ -83,18 +67,42 @@ fun CalendarScreen(
 
     val amountToPay = (totalBorrowed * milkPrice).toInt()
     val amountToReceive = (totalSold * milkPrice).toInt()
-
     val netBalance = amountToReceive - amountToPay
 
     val entry by viewModel.entries.map { it[selectedDate] }.collectAsState(initial = null)
-
     val days = remember(currentMonth) { generateMonthDates(currentMonth) }
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    LaunchedEffect(openEntryForToday) {
+        if (openEntryForToday) {
+            selectedDate = today
+            showDialog = true
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
+                title = {
+                    Text(
+                        "Milk Tracker",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
                 navigationIcon = {
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.logo),
+//                        contentDescription = "App Logo",
+//                        modifier = Modifier
+//                            .padding(2.dp)
+//                            .size(40.dp)
+//
+//                    )
+// The Icon looks of blank tint.
+
                     Image(
                         painter = painterResource(id = R.drawable.logo),
                         contentDescription = "Milk Tracker Logo",
@@ -103,93 +111,60 @@ fun CalendarScreen(
                         contentScale = ContentScale.Fit
                     )
                 },
-                title = {
-                    Text(
-                        text = "Milk Tracker",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    IconButton(onClick = {
-                        // Optional: Exit logic
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Exit App",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-//                scrollBehavior = scrollBehavior
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         },
         content = { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
 
-            Column(modifier = Modifier
-                .padding(innerPadding)
-                .padding(16.dp)) {
-
-                // Header with Month & Navigation
-                Surface(
-                    tonalElevation = 5.dp,
-                    shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                // Month Navigation
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous Month")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
                         }
-
                         Text(
-                            text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
                         )
-
                         IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next Month")
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next")
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Weekday headers
-                val weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                // Weekdays Header
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    weekdays.forEach {
+                    listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach {
                         Text(
                             text = it,
                             modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.labelMedium,
                             textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Calendar Grid
+                // Calendar Days Grid
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(7),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -206,54 +181,51 @@ fun CalendarScreen(
                                 showDialog = true
                             }
                         } else {
-                            Box(modifier = Modifier
-                                .aspectRatio(1f)
-                                .padding(4.dp))
+                            Spacer(modifier = Modifier.aspectRatio(1f))
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = when {
-                        netBalance > 0 -> "Net Balance: ₹$netBalance to Receive"
-                        netBalance < 0 -> "Net Balance: ₹${-netBalance} to Pay"
-                        else -> "Net Balance: ₹0 (Settled)"
-                    },
-                    color = when {
-                        netBalance > 0 -> Color.Blue
-                        netBalance < 0 -> Color.Red
-                        else -> Color.Gray
-                    },
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                // Net Balance Display
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
                     Text(
-                        text = "Monthly Summary",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        text = when {
+                            netBalance > 0 -> "Net Balance: ₹$netBalance to Receive"
+                            netBalance < 0 -> "Net Balance: ₹${-netBalance} to Pay"
+                            else -> "Net Balance: ₹0 (Settled)"
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = when {
+                            netBalance > 0 -> Color(0xFF1E88E5)
+                            netBalance < 0 -> Color(0xFFD32F2F)
+                            else -> Color.Gray
+                        },
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(horizontalAlignment = Alignment.Start) {
-                            Text("Borrowed: $totalBorrowed L", color = Color.Red, fontWeight = FontWeight.SemiBold)
-                            Text("To Pay: ₹$amountToPay", color = Color.Red)
-                        }
+                // Monthly Summary
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Monthly Summary", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Sold: $totalSold L", color = Color.Blue, fontWeight = FontWeight.SemiBold)
-                            Text("To Receive: ₹$amountToReceive", color = Color.Blue)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Column {
+                                Text("Borrowed: $totalBorrowed L", color = Color.Red)
+                                Text("To Pay: ₹$amountToPay", color = Color.Red)
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("Sold: $totalSold L", color = Color.Blue)
+                                Text("To Receive: ₹$amountToReceive", color = Color.Blue)
+                            }
                         }
                     }
                 }
@@ -278,6 +250,7 @@ fun CalendarScreen(
     }
 }
 
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarDay(
@@ -290,53 +263,34 @@ fun CalendarDay(
         .collectAsState(initial = null)
 
     val bgColor = when (entry?.isBorrowed) {
-        true -> Color.Red.copy(alpha = 0.1f)
-        false -> Color.Blue.copy(alpha = 0.1f)
+        true -> Color.Red.copy(alpha = 0.15f)
+        false -> Color.Blue.copy(alpha = 0.15f)
         else -> Color.Transparent
     }
 
     Box(
         modifier = Modifier
             .aspectRatio(1f)
-            .padding(0.dp)
-            .background(bgColor, shape = MaterialTheme.shapes.medium)
+            .background(bgColor, shape = MaterialTheme.shapes.small)
             .clickable { onClick(date) },
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "${date.dayOfMonth}",
-                style = MaterialTheme.typography.bodySmall
-            )
+            Text("${date.dayOfMonth}", style = MaterialTheme.typography.labelLarge)
 
             if (entry != null) {
-                Spacer(modifier = Modifier.height(1.dp))
-                Text(
-                    text = "${entry!!.quantity}L",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Black,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(1.dp))
+                Text("${entry!!.quantity}L", style = MaterialTheme.typography.labelSmall)
                 Icon(
                     imageVector = if (entry!!.isBorrowed) Icons.AutoMirrored.Filled.TrendingDown else Icons.Filled.ShoppingCart,
-                    contentDescription = if (entry!!.isBorrowed) "Borrowed" else "Sold",
+                    contentDescription = null,
                     tint = if (entry!!.isBorrowed) Color.Red else Color.Blue,
-                    modifier = Modifier.size(10.dp)
-                )
-                Box(
-                    modifier = Modifier
-                        .padding(top = 0.dp)
-                        .size(25.dp)
-                        .background(
-                            color = if (entry!!.isBorrowed) Color.Red else Color.Blue,
-                            shape = CircleShape
-                        )
+                    modifier = Modifier.size(14.dp)
                 )
             }
         }
     }
 }
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun generateMonthDates(yearMonth: YearMonth): List<LocalDate?> {
