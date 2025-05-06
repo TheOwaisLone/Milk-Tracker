@@ -41,8 +41,11 @@ fun SettingsScreen(onBack: () -> Unit) {
         reminderTime = formatTime(hour, minute)
     }
     var milkPriceInput by remember { mutableStateOf(milkPrice.toString()) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -85,8 +88,23 @@ fun SettingsScreen(onBack: () -> Unit) {
                     checked = isReminderOn,
                     onCheckedChange = {
                         isReminderOn = it
+
+                        val (h, m) = parseTime(reminderTime)
+
+                        scope.launch {
+                            viewModel.updateReminder(it, h, m)
+
+                            if (it) {
+                                ReminderManager.scheduleDailyReminder(context, h, m)
+                                snackbarHostState.showSnackbar("Reminder enabled for $reminderTime")
+                            } else {
+                                ReminderManager.cancelReminder(context)
+                                snackbarHostState.showSnackbar("Reminder disabled")
+                            }
+                        }
                     }
                 )
+
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -114,6 +132,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                             } else {
                                 ReminderManager.cancelReminder(context)
                             }
+
+                            // Show confirmation
+                            snackbarHostState.showSnackbar("Reminder time updated to $formatted")
                         }
                     }
                 }) {
@@ -143,18 +164,22 @@ fun SettingsScreen(onBack: () -> Unit) {
                     val (h, m) = parseTime(reminderTime)
                     val price = milkPriceInput.toFloatOrNull() ?: 35.0f
 
-                    viewModel.updateReminder(isReminderOn, h, m)
-                    viewModel.updateMilkPrice(price)
+                    scope.launch {
+                        viewModel.updateReminder(isReminderOn, h, m)
+                        viewModel.updateMilkPrice(price)
 
-                    if (isReminderOn) {
-                        ReminderManager.scheduleDailyReminder(context, h, m)
-                    } else {
-                        ReminderManager.cancelReminder(context)
+                        if (isReminderOn) {
+                            ReminderManager.scheduleDailyReminder(context, h, m)
+                        } else {
+                            ReminderManager.cancelReminder(context)
+                        }
+
+                        snackbarHostState.showSnackbar("Milk price updated to ₹${"%.2f".format(price)}")
                     }
-
                 }) {
                     Text("Save")
                 }
+
             }
 
 
@@ -162,6 +187,7 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
     }
 }
+
 
 fun showTimePickerDialog(context: Context, onTimeSelected: (Int, Int) -> Unit) {
     val calendar = Calendar.getInstance()
