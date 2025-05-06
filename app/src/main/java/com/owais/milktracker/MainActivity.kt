@@ -27,6 +27,8 @@ import com.owais.milktracker.utils.SettingsPreferences.cleanCorruptedMilkPrice
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.ZoneId
+import androidx.compose.runtime.LaunchedEffect
+
 
 class MainActivity : ComponentActivity() {
 
@@ -42,11 +44,20 @@ class MainActivity : ComponentActivity() {
         val openEntry = intent?.getBooleanExtra("open_entry_for_today", false) ?: false
 
         NotificationUtils.createNotificationChannel(this)
-        requestNotificationPermission()
-        checkAndRequestExactAlarmPermission()
+        // PERMISSION REQUESTS MOVED FROM HERE
 
         setContent {
             val navController = rememberNavController()
+
+            // Defer permission requests until after initial composition attempt
+            LaunchedEffect(Unit) {
+                // You can add a tiny delay here if you find it necessary,
+                // but try without it first:
+                // kotlinx.coroutines.delay(50)
+
+                requestNotificationPermission()
+                checkAndRequestExactAlarmPermission()
+            }
 
             NavHost(navController = navController, startDestination = "calendar") {
                 composable("calendar") {
@@ -64,10 +75,13 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
-
             }
         }
     }
+
+    // Keep the rest of your MainActivity methods (scheduleExactAlarm, getNext8PMTimeInMillis,
+    // requestNotificationPermission, checkAndRequestExactAlarmPermission) as they were.
+    // These methods will now be called from the LaunchedEffect.
 
     @SuppressLint("ScheduleExactAlarm")
     @RequiresApi(Build.VERSION_CODES.O)
@@ -117,11 +131,12 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = getSystemService(AlarmManager::class.java)
             if (alarmManager.canScheduleExactAlarms()) {
+                // Check added to ensure scheduleExactAlarm is callable
                 scheduleExactAlarm()
             } else {
                 val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                 intent.data = "package:$packageName".toUri()
-                startActivity(intent)
+                startActivity(intent) // This call might take the user out of the app
             }
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -130,6 +145,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-
-
