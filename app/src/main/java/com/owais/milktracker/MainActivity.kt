@@ -13,22 +13,27 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.owais.milktracker.alarm.MilkReminderReceiver
 import com.owais.milktracker.ui.calendar.CalendarScreen
 import com.owais.milktracker.ui.settings.SettingsScreen
+import com.owais.milktracker.ui.theme.MilkTrackerTheme
 import com.owais.milktracker.utils.NotificationUtils
 import com.owais.milktracker.utils.SettingsPreferences.cleanCorruptedMilkPrice
+import com.owais.milktracker.viewmodel.SettingsViewModel
+import com.owais.milktracker.viewmodel.SettingsViewModelFactory
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.ZoneId
-import androidx.compose.runtime.LaunchedEffect
-
 
 class MainActivity : ComponentActivity() {
 
@@ -44,44 +49,41 @@ class MainActivity : ComponentActivity() {
         val openEntry = intent?.getBooleanExtra("open_entry_for_today", false) ?: false
 
         NotificationUtils.createNotificationChannel(this)
-        // PERMISSION REQUESTS MOVED FROM HERE
 
         setContent {
+            val viewModel: SettingsViewModel = viewModel(
+                factory = SettingsViewModelFactory(applicationContext)
+            )
+            val isDarkMode by viewModel.isDarkMode.collectAsState(initial = false)
             val navController = rememberNavController()
 
             // Defer permission requests until after initial composition attempt
             LaunchedEffect(Unit) {
-                // You can add a tiny delay here if you find it necessary,
-                // but try without it first:
-                // kotlinx.coroutines.delay(50)
-
                 requestNotificationPermission()
                 checkAndRequestExactAlarmPermission()
             }
 
-            NavHost(navController = navController, startDestination = "calendar") {
-                composable("calendar") {
-                    CalendarScreen(
-                        openEntryForToday = openEntry,
-                        onSettingsClick = {
-                            navController.navigate("settings")
-                        }
-                    )
-                }
-                composable("settings") {
-                    SettingsScreen(
-                        onBack = {
-                            navController.popBackStack()
-                        }
-                    )
+            MilkTrackerTheme(darkTheme = isDarkMode) {
+                NavHost(navController = navController, startDestination = "calendar") {
+                    composable("calendar") {
+                        CalendarScreen(
+                            openEntryForToday = openEntry,
+                            onSettingsClick = {
+                                navController.navigate("settings")
+                            }
+                        )
+                    }
+                    composable("settings") {
+                        SettingsScreen(
+                            onBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
                 }
             }
         }
     }
-
-    // Keep the rest of your MainActivity methods (scheduleExactAlarm, getNext8PMTimeInMillis,
-    // requestNotificationPermission, checkAndRequestExactAlarmPermission) as they were.
-    // These methods will now be called from the LaunchedEffect.
 
     @SuppressLint("ScheduleExactAlarm")
     @RequiresApi(Build.VERSION_CODES.O)
@@ -131,12 +133,11 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = getSystemService(AlarmManager::class.java)
             if (alarmManager.canScheduleExactAlarms()) {
-                // Check added to ensure scheduleExactAlarm is callable
                 scheduleExactAlarm()
             } else {
                 val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                 intent.data = "package:$packageName".toUri()
-                startActivity(intent) // This call might take the user out of the app
+                startActivity(intent)
             }
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
