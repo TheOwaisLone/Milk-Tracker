@@ -33,22 +33,72 @@ Milk Tracker is a simple Android app built with **Kotlin** and **Jetpack Compose
 │       └── owais
 │           └── milktracker
 │               ├── alarm
+│               │   ├── MilkReminderReceiver.kt
+│               │   └── ReminderManager.kt
 │               ├── data
+│               │   ├── database
+│               │   │   ├── Converters.kt
+│               │   │   ├── MilkDatabase.kt
+│               │   │   └── MilkEntryDao.kt
+│               │   ├── model
+│               │   │   └── MilkEntry.kt
+│               │   ├── repository
+│               │   │   └── MilkRepository.kt
+│               │   └── SettingsDataStore.kt
 │               ├── MainActivity.kt
 │               ├── SplashActivity.kt
 │               ├── ui
+│               │   ├── calendar
+│               │   │   └── CalendarScreen.kt
+│               │   ├── components
+│               │   │   └── EntryDialog.kt
+│               │   ├── settings
+│               │   │   └── SettingsScreen.kt
+│               │   └── theme
+│               │       ├── Color.kt
+│               │       ├── Shape.kt
+│               │       ├── Theme.kt
+│               │       └── Type.kt
 │               ├── utils
+│               │   ├── AlarmUtils.kt
+│               │   ├── NotificationUtils.kt
+│               │   └── SettingsPreferences.kt
 │               └── viewmodel
+│                   ├── MilkViewModelFactory.kt
+│                   ├── MilkViewModel.kt
+│                   ├── SettingsViewModelFactory.kt
+│                   └── SettingsViewModel.kt
 └── res
     ├── drawable
+    │   ├── ic_launcher_background.xml
+    │   ├── ic_launcher_foreground.xml
+    │   ├── logo.png
+    │   └── splash_background.xml
     ├── mipmap-anydpi-v26
+    │   ├── ic_launcher_round.xml
+    │   └── ic_launcher.xml
     ├── mipmap-hdpi
+    │   ├── ic_launcher_round.webp
+    │   └── ic_launcher.webp
     ├── mipmap-mdpi
+    │   ├── ic_launcher_round.webp
+    │   └── ic_launcher.webp
     ├── mipmap-xhdpi
+    │   ├── ic_launcher_round.webp
+    │   └── ic_launcher.webp
     ├── mipmap-xxhdpi
+    │   ├── ic_launcher_round.webp
+    │   └── ic_launcher.webp
     ├── mipmap-xxxhdpi
+    │   ├── ic_launcher_round.webp
+    │   └── ic_launcher.webp
     ├── values
+    │   ├── colors.xml
+    │   ├── strings.xml
+    │   └── themes.xml
     └── xml
+        ├── backup_rules.xml
+        └── data_extraction_rules.xml
 ```
 ---
 
