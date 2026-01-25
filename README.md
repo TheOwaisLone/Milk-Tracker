@@ -25,15 +25,37 @@ Milk Tracker is a simple Android app built with **Kotlin** and **Jetpack Compose
 ---
 
 ## 📂 Project Structure
-
-app/ └── src/main/java/com/owais/milktracker/ ├── alarm/ ├── data/ ├── ui/ ├── utils/ └── viewmodel/
-
+```bash
+/app/src/main/ 
+├── AndroidManifest.xml
+├── java
+│   └── com
+│       └── owais
+│           └── milktracker
+│               ├── alarm
+│               ├── data
+│               ├── MainActivity.kt
+│               ├── SplashActivity.kt
+│               ├── ui
+│               ├── utils
+│               └── viewmodel
+└── res
+    ├── drawable
+    ├── mipmap-anydpi-v26
+    ├── mipmap-hdpi
+    ├── mipmap-mdpi
+    ├── mipmap-xhdpi
+    ├── mipmap-xxhdpi
+    ├── mipmap-xxxhdpi
+    ├── values
+    └── xml
+```
 ---
 
 ## 🚀 Getting Started
 Clone and open in Android Studio:
 
-```bash
+
 git clone https://github.com/TheOwaisLone/Milk-Tracker.git
 cd Milk-Tracker
 
@@ -51,15 +73,3 @@ Multi-language support
 Voice entry
 
 PDF report generation
-
-
-
----
-
-📜 License
-
-MIT License.
-
----
-
-If you'd like an even **shorter** or more **stylish** README (badges, banner image, emojis, GIF demo), just tell me!
