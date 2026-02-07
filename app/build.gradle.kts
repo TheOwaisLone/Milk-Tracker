@@ -38,9 +38,6 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.10"
-    }
 }
 
 configurations.all {
@@ -65,9 +62,10 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // ───────── Room ─────────
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    val room_version = "2.7.0-beta01"
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
+    kapt("androidx.room:room-compiler:$room_version")
 
     // ───────── DataStore ─────────
     implementation("androidx.datastore:datastore-preferences:1.0.0")

@@ -12,10 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/**
- * Simple, clean Material 3 onboarding scaffold.
- * No effects. No gradients. No hacks.
- */
 @Composable
 fun OnboardingScaffold(
     icon: @Composable () -> Unit,
@@ -35,9 +31,8 @@ fun OnboardingScaffold(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
 
-        // ───── Center Content ─────
         Column(
             modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -46,7 +41,7 @@ fun OnboardingScaffold(
 
             icon()
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(24.dp))
 
             Text(
                 text = title,
@@ -54,7 +49,7 @@ fun OnboardingScaffold(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
             Text(
                 text = description,
@@ -63,26 +58,19 @@ fun OnboardingScaffold(
             )
 
             content?.let {
-                Spacer(modifier = Modifier.height(24.dp))
-
+                Spacer(Modifier.height(24.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    shape = MaterialTheme.shapes.large
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
+                        modifier = Modifier.padding(24.dp),
                         contentAlignment = Alignment.Center
-                    ) {
-                        it()
-                    }
+                    ) { it() }
                 }
             }
         }
 
-        // ───── Bottom Navigation ─────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -93,35 +81,24 @@ fun OnboardingScaffold(
 
             if (showBack) {
                 OutlinedButton(onClick = { onBack?.invoke() }) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, null)
+                    Spacer(Modifier.width(8.dp))
                     Text("Back")
                 }
             } else {
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(Modifier.width(8.dp))
             }
 
             Button(onClick = onPrimaryClick) {
-                when (primaryButton) {
-
-                    "Allow" -> {
-                        Text("Allow")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.Outlined.Notifications,
-                            contentDescription = "Allow notifications"
-                        )
-                    }
-
-                    else -> {
-                        Text(primaryButton)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-                            contentDescription = "Next"
-                        )
-                    }
-                }
+                Text(primaryButton)
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    if (primaryButton == "Allow")
+                        Icons.Outlined.Notifications
+                    else
+                        Icons.AutoMirrored.Outlined.ArrowForward,
+                    null
+                )
             }
         }
     }

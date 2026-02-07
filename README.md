@@ -123,3 +123,8 @@ Multi-language support
 Voice entry
 
 PDF report generation
+
+
+---
+
+---

@@ -93,15 +93,15 @@ fun CalendarScreen(
                     )
                 },
                 navigationIcon = {
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.logo),
-//                        contentDescription = "App Logo",
-//                        modifier = Modifier
-//                            .padding(2.dp)
-//                            .size(40.dp)
-//
-//                    )
-// The Icon looks of blank tint.
+                    Icon(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "App Logo",
+                        modifier = Modifier
+                            .padding(2.dp)
+                            .size(40.dp)
+
+                    )
+//                    The Icon looks of blank tint.
 
                     Image(
                         painter = painterResource(id = R.drawable.logo),
