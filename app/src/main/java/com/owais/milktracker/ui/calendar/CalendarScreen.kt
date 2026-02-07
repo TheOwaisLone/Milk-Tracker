@@ -93,14 +93,14 @@ fun CalendarScreen(
                     )
                 },
                 navigationIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "App Logo",
-                        modifier = Modifier
-                            .padding(2.dp)
-                            .size(40.dp)
-
-                    )
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.logo),
+//                        contentDescription = "App Logo",
+//                        modifier = Modifier
+//                            .padding(2.dp)
+//                            .size(40.dp)
+//
+//                    )
 //                    The Icon looks of blank tint.
 
                     Image(
@@ -250,46 +250,6 @@ fun CalendarScreen(
     }
 }
 
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun CalendarDay(
-    date: LocalDate,
-    viewModel: MilkViewModel,
-    onClick: (LocalDate) -> Unit
-) {
-    val entry by viewModel.entries
-        .map { it[date] }
-        .collectAsState(initial = null)
-
-    val bgColor = when (entry?.isBorrowed) {
-        true -> Color.Red.copy(alpha = 0.15f)
-        false -> Color.Blue.copy(alpha = 0.15f)
-        else -> Color.Transparent
-    }
-
-    Box(
-        modifier = Modifier
-            .aspectRatio(1f)
-            .background(bgColor, shape = MaterialTheme.shapes.small)
-            .clickable { onClick(date) },
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("${date.dayOfMonth}", style = MaterialTheme.typography.labelLarge)
-
-            if (entry != null) {
-                Text("${entry!!.quantity}L", style = MaterialTheme.typography.labelSmall)
-                Icon(
-                    imageVector = if (entry!!.isBorrowed) Icons.AutoMirrored.Filled.TrendingDown else Icons.Filled.ShoppingCart,
-                    contentDescription = null,
-                    tint = if (entry!!.isBorrowed) Color.Red else Color.Blue,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-        }
-    }
-}
 
 
 @RequiresApi(Build.VERSION_CODES.O)
