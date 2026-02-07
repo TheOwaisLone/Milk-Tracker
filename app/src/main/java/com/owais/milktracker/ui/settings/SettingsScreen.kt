@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.owais.milktracker.alarm.ReminderManager
 import com.owais.milktracker.data.SettingsDataStore
-import com.owais.milktracker.utils.SettingsPreferences
 import com.owais.milktracker.viewmodel.SettingsViewModel
 import com.owais.milktracker.viewmodel.SettingsViewModelFactory
 import kotlinx.coroutines.launch
@@ -54,7 +53,8 @@ import java.util.Calendar
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModelFactory(context))
+    val viewModel: SettingsViewModel =
+        viewModel(factory = SettingsViewModelFactory(context))
 
     val reminderEnabled by viewModel.reminderEnabled.collectAsState(initial = true)
     val hour by viewModel.reminderHour.collectAsState(initial = 20)
@@ -62,7 +62,6 @@ fun SettingsScreen(onBack: () -> Unit) {
     val milkPrice by viewModel.milkPrice.collectAsState()
     val isDarkMode by viewModel.isDarkMode.collectAsState(initial = false)
 
-    var isReminderOn by remember { mutableStateOf(reminderEnabled) }
     var reminderTime by remember { mutableStateOf("") }
     var milkPriceInput by remember { mutableStateOf(milkPrice.toString()) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -101,7 +100,7 @@ fun SettingsScreen(onBack: () -> Unit) {
         ) {
             Text("App Preferences", style = MaterialTheme.typography.headlineSmall)
 
-            // Section: Dark Mode Toggle
+            // Dark Mode
             ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -122,31 +121,28 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            // Section: Reminder Settings
+            // Reminder
             ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Daily Reminder", modifier = Modifier.weight(1f))
                         Switch(
-                            checked = isReminderOn,
-                            onCheckedChange = {
-                                isReminderOn = it
-                                if (reminderTime.isNotBlank()) {
-                                    val (h, m) = parseTime(reminderTime)
-                                    scope.launch {
-                                        viewModel.updateReminder(it, h, m)
-                                        if (it) {
-                                            ReminderManager.scheduleDailyReminder(context, h, m)
-                                            snackbarHostState.showSnackbar("Reminder enabled for $reminderTime")
-                                        } else {
-                                            ReminderManager.cancelReminder(context)
-                                            snackbarHostState.showSnackbar("Reminder disabled")
-                                        }
+                            checked = reminderEnabled,
+                            onCheckedChange = { enabled ->
+                                val (h, m) = parseTime(reminderTime)
+                                scope.launch {
+                                    viewModel.updateReminder(enabled, h, m)
+                                    if (enabled) {
+                                        ReminderManager.scheduleDailyReminder(context, h, m)
+                                        snackbarHostState.showSnackbar(
+                                            "Reminder enabled for $reminderTime"
+                                        )
+                                    } else {
+                                        ReminderManager.cancelReminder(context)
+                                        snackbarHostState.showSnackbar("Reminder disabled")
                                     }
                                 }
                             }
@@ -155,26 +151,19 @@ fun SettingsScreen(onBack: () -> Unit) {
 
                     HorizontalDivider()
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Reminder Time: $reminderTime", modifier = Modifier.weight(1f))
                         OutlinedButton(onClick = {
                             showTimePickerDialog(context) { h, m ->
-                                val formatted = formatTime(h, m)
-                                reminderTime = formatted
-
+                                reminderTime = formatTime(h, m)
                                 scope.launch {
-                                    SettingsDataStore.setReminderTime(context, formatted)
-                                    SettingsPreferences.saveReminder(context, isReminderOn, h, m)
-
-                                    if (isReminderOn) {
+                                    viewModel.updateReminder(reminderEnabled, h, m)
+                                    if (reminderEnabled) {
                                         ReminderManager.scheduleDailyReminder(context, h, m)
-                                    } else {
-                                        ReminderManager.cancelReminder(context)
                                     }
-
-                                    snackbarHostState.showSnackbar("Reminder time updated to $formatted")
+                                    snackbarHostState.showSnackbar(
+                                        "Reminder time updated to $reminderTime"
+                                    )
                                 }
                             }
                         }) {
@@ -184,7 +173,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            // Section: Milk Price
+            // Milk Price
             ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -202,21 +191,12 @@ fun SettingsScreen(onBack: () -> Unit) {
 
                     Button(
                         onClick = {
-                            val price = milkPriceInput.toFloatOrNull() ?: 35.0f
-                            if (reminderTime.isNotBlank()) {
-                                val (h, m) = parseTime(reminderTime)
-                                scope.launch {
-                                    viewModel.updateReminder(isReminderOn, h, m)
-                                    viewModel.updateMilkPrice(price)
-
-                                    if (isReminderOn) {
-                                        ReminderManager.scheduleDailyReminder(context, h, m)
-                                    } else {
-                                        ReminderManager.cancelReminder(context)
-                                    }
-
-                                    snackbarHostState.showSnackbar("Milk price updated to ₹${"%.2f".format(price)}")
-                                }
+                            val price = milkPriceInput.toFloatOrNull() ?: 35f
+                            scope.launch {
+                                viewModel.updateMilkPrice(price)
+                                snackbarHostState.showSnackbar(
+                                    "Milk price updated to ₹${"%.2f".format(price)}"
+                                )
                             }
                         },
                         modifier = Modifier.align(Alignment.End)
@@ -229,50 +209,36 @@ fun SettingsScreen(onBack: () -> Unit) {
     }
 }
 
+// ---------- Helpers ----------
 
-// Time Picker Dialog
 fun showTimePickerDialog(context: Context, onTimeSelected: (Int, Int) -> Unit) {
     val calendar = Calendar.getInstance()
-    val hour = calendar.get(Calendar.HOUR_OF_DAY)
-    val minute = calendar.get(Calendar.MINUTE)
-
     TimePickerDialog(
         context,
-        { _: TimePicker, selectedHour: Int, selectedMinute: Int ->
-            onTimeSelected(selectedHour, selectedMinute)
-        },
-        hour,
-        minute,
+        { _: TimePicker, h: Int, m: Int -> onTimeSelected(h, m) },
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
         false
     ).show()
 }
 
-// Format time to "h:mm AM/PM"
 fun formatTime(hour: Int, minute: Int): String {
     val isPM = hour >= 12
-    val formattedHour = if (hour % 12 == 0) 12 else hour % 12
-    val formattedMinute = minute.toString().padStart(2, '0')
-    val amPm = if (isPM) "PM" else "AM"
-    return "$formattedHour:$formattedMinute $amPm"
+    val h = if (hour % 12 == 0) 12 else hour % 12
+    return "$h:${minute.toString().padStart(2, '0')} ${if (isPM) "PM" else "AM"}"
 }
 
-// Safe parser with fallback
 fun parseTime(time: String): Pair<Int, Int> {
-    if (time.isBlank()) return 20 to 0 // fallback default
-
+    if (time.isBlank()) return 20 to 0
     val parts = time.trim().split(" ", ":")
-    if (parts.size != 3) return 20 to 0 // malformed input
+    if (parts.size != 3) return 20 to 0
 
-    return try {
-        var hour = parts[0].toInt()
-        val minute = parts[1].toInt()
-        val isPM = parts[2].uppercase() == "PM"
+    var hour = parts[0].toIntOrNull() ?: return 20 to 0
+    val minute = parts[1].toIntOrNull() ?: return 20 to 0
+    val isPM = parts[2].uppercase() == "PM"
 
-        if (isPM && hour != 12) hour += 12
-        if (!isPM && hour == 12) hour = 0
+    if (isPM && hour != 12) hour += 12
+    if (!isPM && hour == 12) hour = 0
 
-        hour to minute
-    } catch (e: NumberFormatException) {
-        20 to 0 // fallback if parsing fails
-    }
+    return hour to minute
 }
