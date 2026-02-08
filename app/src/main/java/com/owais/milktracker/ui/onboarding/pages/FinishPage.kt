@@ -22,7 +22,9 @@ fun FinishPage(
     OnboardingScaffold(
         icon = { Icon(Icons.Outlined.CheckCircle, null, Modifier.size(72.dp)) },
         title = "All Set!",
-        description = "You’re ready to go.",
+        description = "You're ready to start tracking your milk consumption and expenses. " +
+                "Tap the Start button below to begin using the app." +
+                if (isXiaomi) "\n\nNote: If you have a Xiaomi device, please make sure to allow autostart for this app in your device settings to ensure that reminders work properly." else "",
         showBack = true,
         onBack = onBack,
         primaryButton = "Start",

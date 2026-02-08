@@ -24,7 +24,8 @@ fun NotificationPermissionPage(
     OnboardingScaffold(
         icon = { Icon(Icons.Outlined.Notifications, null, Modifier.size(72.dp)) },
         title = "Notifications",
-        description = "Allow notifications",
+        description = "To get daily reminders about milk entry, we need permission to send you notifications. " +
+                "\n\n Please allow notifications to stay on top of your milk tracking.",
         showBack = true,
         onBack = onBack,
         primaryButton = if (granted) "Next" else "Allow",

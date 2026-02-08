@@ -21,8 +21,10 @@ fun WelcomePage(
                 modifier = Modifier.size(72.dp)
             )
         },
-        title = "Welcome",
-        description = "Track milk expenses and reminders.",
+        title = "Welcome to Milk Tracker",
+        description = "Let's get started with setting up your milk tracking experience. " +
+                "\n\n We'll guide you through a few simple steps to personalize the app for you." +
+                "\n\n Tap 'Get Started' to begin the setup process.",
         showBack = false,
         primaryButton = "Get Started",
         onPrimaryClick = onNext

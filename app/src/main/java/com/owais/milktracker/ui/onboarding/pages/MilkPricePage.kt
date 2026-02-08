@@ -28,7 +28,8 @@ fun MilkPricePage(
     OnboardingScaffold(
         icon = { Icon(Icons.Outlined.CurrencyRupee, null, Modifier.size(72.dp)) },
         title = "Milk Price",
-        description = "Set price per litre",
+        description = "Enter the current price of milk per litre. This will help you track your expenses and analyze your spending habits over time." +
+                "\n\n You can update this price later in settings if it changes.",
         showBack = true,
         onBack = onBack,
         content = {

@@ -30,7 +30,8 @@ fun ReminderTimePage(
     OnboardingScaffold(
         icon = { Icon(Icons.Outlined.Schedule, null, Modifier.size(72.dp)) },
         title = "Reminder Time",
-        description = "Choose reminder time",
+        description = "Set the time for your daily reminder. This will be the time you receive a notification to log your milk entry each day." +
+                "\n\n You can change this time later in settings.",
         showBack = true,
         onBack = onBack,
         content = {

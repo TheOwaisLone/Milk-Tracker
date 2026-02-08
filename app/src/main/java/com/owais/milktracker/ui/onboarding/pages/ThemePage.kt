@@ -23,8 +23,9 @@ fun ThemePage(
         icon = {
             Icon(Icons.Outlined.DarkMode, null, Modifier.size(72.dp))
         },
-        title = "Theme",
-        description = "Light or Dark mode",
+        title = "Choose Theme",
+        description = "Select your preferred theme for the app. You can always change this later in settings." +
+                "\n\n Choose between a light or dark theme to suit your preference.",
         showBack = true,
         onBack = onBack,
         content = {

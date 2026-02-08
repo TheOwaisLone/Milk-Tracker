@@ -28,7 +28,11 @@ fun XiaomiAutoStartPage(
         },
         title = "Allow AutoStart",
         description = if (!enabled) {
-            "Xiaomi devices require AutoStart permission for reminders to work reliably."
+            "Xiaomi devices often kill background processes to save battery, which can prevent reminders from working. " +
+                    "\n To ensure reliable reminders, please enable AutoStart for Milk Tracker in the settings." +
+                    "\n Don’t worry, it’s a one-time setup and won’t affect your battery life." +
+                    "\n Tap the button below to open the AutoStart settings and enable it for Milk Tracker." +
+                    "\n Once enabled, you can proceed to the next step."
         } else {
             "AutoStart enabled. You’re good to go."
         },

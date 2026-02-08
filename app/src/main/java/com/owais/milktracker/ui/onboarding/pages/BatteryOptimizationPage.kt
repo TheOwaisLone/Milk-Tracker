@@ -27,7 +27,10 @@ fun BatteryOptimizationPage(
         },
         title = "Disable Battery Optimization",
         description = if (!disabled) {
-            "Disable battery optimization so reminders work even when the app is closed."
+            "Disable battery optimization so reminders work even when the app is closed." +
+                    "\n\nDon't worry, this won't affect your battery life significantly." +
+                    "\n\nYou can always change this setting later if you want." +
+                    "\n\nBut it is necessary fot the Daily Reminders."
         } else {
             "Battery optimization disabled."
         },
