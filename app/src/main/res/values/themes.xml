@@ -5,5 +5,7 @@
         <!-- Required to prevent white screen -->
         <item name="android:windowBackground">@color/white</item>
         <item name="android:colorBackground">@color/white</item>
+        <!-- Make system status bar icons dark/visible in light mode -->
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

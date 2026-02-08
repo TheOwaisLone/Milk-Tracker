@@ -3,21 +3,42 @@ package com.owais.milktracker.ui.calendar
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -25,7 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.owais.milktracker.R
 import com.owais.milktracker.ui.components.EntryDialog
@@ -36,7 +57,7 @@ import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
-import java.util.*
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -89,20 +110,10 @@ fun CalendarScreen(
                     Text(
                         "Milk Tracker",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color.Black
                     )
                 },
                 navigationIcon = {
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.logo),
-//                        contentDescription = "App Logo",
-//                        modifier = Modifier
-//                            .padding(2.dp)
-//                            .size(40.dp)
-//
-//                    )
-//                    The Icon looks of blank tint.
-
                     Image(
                         painter = painterResource(id = R.drawable.logo),
                         contentDescription = "Milk Tracker Logo",
@@ -113,12 +124,15 @@ fun CalendarScreen(
                 },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.Black)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    navigationIconContentColor = Color.Black,
+                    actionIconContentColor = Color.Black
+                ),
+                scrollBehavior = scrollBehavior
             )
         },
         content = { innerPadding ->
@@ -158,7 +172,7 @@ fun CalendarScreen(
                             text = it,
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.ExtraBold,
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
