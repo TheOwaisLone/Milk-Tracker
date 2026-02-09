@@ -1,5 +1,6 @@
 package com.owais.milktracker.viewmodel
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class SettingsViewModel(private val context: Context) : ViewModel() {
+class SettingsViewModel(@SuppressLint("StaticFieldLeak") private val context: Context) : ViewModel() {
 
     // Expose reminder settings and milk price
     private val _reminderSettings = SettingsPreferences.getReminderSettings(context)
@@ -26,6 +27,7 @@ class SettingsViewModel(private val context: Context) : ViewModel() {
     // Expose dark mode state
     val isDarkMode: StateFlow<Boolean> = SettingsDataStore.getDarkMode(context)
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
 
     fun updateReminder(enabled: Boolean, hour: Int, minute: Int) {
         viewModelScope.launch {
