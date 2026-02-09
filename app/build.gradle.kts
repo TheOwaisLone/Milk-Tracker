@@ -31,6 +31,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -81,6 +82,9 @@ dependencies {
     implementation("com.google.guava:guava:23.0") {
         exclude(group = "com.google.guava", module = "listenablefuture")
     }
+
+    // ───────── Desugaring for java.time support on API 24 ─────────
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
 
     // ───────── Testing ─────────
     testImplementation(libs.junit)

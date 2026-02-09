@@ -40,8 +40,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import android.content.Intent
-import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.owais.milktracker.alarm.ReminderManager
 import com.owais.milktracker.utils.SettingsUtils.formatTime
 import com.owais.milktracker.utils.SettingsUtils.showTimePickerDialog
@@ -75,6 +75,45 @@ fun SettingsScreen(onBack: () -> Unit) {
     var reminderTime by remember { mutableStateOf("") }
     var milkPriceInput by remember { mutableStateOf(milkPrice.toString()) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Export launcher - creates a new file
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val (_, message) = DataImportExportUtils.exportDataToJson(
+                    context = context,
+                    entries = entries.values.toList(),
+                    uri = uri
+                )
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+    }
+
+    // Import launcher - opens an existing file
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val (success, importedData) = DataImportExportUtils.importDataFromJson(
+                    context = context,
+                    uri = uri
+                )
+                val (importedEntries, message) = importedData
+
+                if (success) {
+                    // Upsert all imported entries
+                    importedEntries.forEach { entry ->
+                        milkViewModel.upsertEntry(entry)
+                    }
+                }
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+    }
 
     LaunchedEffect(hour, minute) {
         reminderTime = formatTime(hour, minute)
@@ -121,7 +160,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         checked = isDarkMode,
                         onCheckedChange = { isDark ->
                             scope.launch {
-                                viewModel.updateDarkMode(isDark)
+                                settingsViewModel.updateDarkMode(isDark)
                                 snackbarHostState.showSnackbar(
                                     if (isDark) "Dark mode enabled" else "Dark mode disabled"
                                 )
@@ -144,7 +183,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                             onCheckedChange = { enabled ->
                                 val (h, m) = parseTime(reminderTime)
                                 scope.launch {
-                                    viewModel.updateReminder(enabled, h, m)
+                                    settingsViewModel.updateReminder(enabled, h, m)
                                     if (enabled) {
                                         ReminderManager.scheduleDailyReminder(context, h, m)
                                         snackbarHostState.showSnackbar(
@@ -167,7 +206,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                             showTimePickerDialog(context) { h, m ->
                                 reminderTime = formatTime(h, m)
                                 scope.launch {
-                                    viewModel.updateReminder(reminderEnabled, h, m)
+                                    settingsViewModel.updateReminder(reminderEnabled, h, m)
                                     if (reminderEnabled) {
                                         ReminderManager.scheduleDailyReminder(context, h, m)
                                     }
@@ -203,7 +242,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         onClick = {
                             val price = milkPriceInput.toFloatOrNull() ?: 35f
                             scope.launch {
-                                viewModel.updateMilkPrice(price)
+                                settingsViewModel.updateMilkPrice(price)
                                 snackbarHostState.showSnackbar(
                                     "Milk price updated to ₹${"%.2f".format(price)}"
                                 )
@@ -216,7 +255,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            //Import/Export (Placeholder)
+            //Import/Export
             ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                         modifier = Modifier.padding(16.dp),
@@ -229,7 +268,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Button(
-                                onClick = {/* importDataFromCSV(viewModel.) */},
+                                onClick = {
+                                    // Launch file picker for import
+                                    importLauncher.launch(arrayOf("application/json"))
+                                },
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Import Data")
@@ -238,7 +280,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                             Spacer(modifier = Modifier.width(25.dp))
 
                             Button(
-                                onClick = { /* exportDataToCSV(viewModel.getAllEntries)*/ },
+                                onClick = {
+                                    // Launch file picker for export
+                                    exportLauncher.launch("milk_tracker_${System.currentTimeMillis()}.json")
+                                },
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Export Data")
@@ -249,5 +294,6 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
     }
 }
+
 
 

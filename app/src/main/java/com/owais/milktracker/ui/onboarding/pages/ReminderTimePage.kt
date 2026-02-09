@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.owais.milktracker.ui.onboarding.OnboardingScaffold
-import com.owais.milktracker.ui.settings.formatTime
-import com.owais.milktracker.ui.settings.showTimePickerDialog
+import com.owais.milktracker.utils.SettingsUtils.formatTime
+import com.owais.milktracker.utils.SettingsUtils.showTimePickerDialog
 import com.owais.milktracker.viewmodel.SettingsViewModel
 
 @Composable
